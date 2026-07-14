@@ -1,11 +1,14 @@
 import express, { Request, Response } from 'express';
 import 'dotenv/config';
+import { prisma } from './db/prisma.js';
 
 const app = express();
 
-app.get('/', (req: Request, res: Response) => {
+app.get('/', async (req: Request, res: Response) => {
+  const users = await prisma.user.findMany();
+
   res.json({
-    message: 'Hello World!',
+    users,
   });
 });
 
