@@ -13,12 +13,7 @@ export default tseslint.config(
         project: './tsconfig.json',
       },
     },
-    plugins: {
-      prettier: prettierPlugin,
-    },
     rules: {
-      'prettier/prettier': 'error',
-
       '@typescript-eslint/no-explicit-any': 'warn',
       'no-console': 'off',
     },
