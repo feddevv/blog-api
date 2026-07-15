@@ -1,10 +1,15 @@
-import z, { ZodError } from 'zod';
+import { ZodError } from 'zod';
 import { HttpError } from '../errors/HttpError.js';
 import { Request, Response, NextFunction } from 'express';
 
+interface ErrorDetails {
+  message: string;
+  path: string;
+}
+
 interface ErrorResponse {
   message: string;
-  errors?: z.core.$ZodIssue[];
+  errors?: ErrorDetails[];
 }
 
 export function errorHandler(
@@ -15,7 +20,6 @@ export function errorHandler(
 ) {
   let statusCode: number | null = null;
   let message = 'Something went wrong!';
-
   if (err instanceof Error) {
     message = err.message;
   }
@@ -25,7 +29,10 @@ export function errorHandler(
     statusCode = err.statusCode;
   } else if (err instanceof ZodError) {
     errorResponse.message = 'Validation failed';
-    errorResponse.errors = err.issues;
+    errorResponse.errors = err.issues.map((issue) => ({
+      message: issue.message,
+      path: issue.path.join('.'),
+    }));
     statusCode = 422;
   } else {
     errorResponse.message = 'Something went wrong!';
