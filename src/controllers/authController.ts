@@ -2,12 +2,7 @@ import { Request, Response } from 'express';
 import { prisma } from '../db/prisma.js';
 import { hash } from 'bcrypt';
 import { HttpError } from '../errors/HttpError.js';
-
-interface RegisterBody {
-  username: string;
-  email: string;
-  password: string;
-}
+import { RegisterBody } from '../validation/schemas.js';
 
 type TypedRequestBody<T> = Request<unknown, unknown, T>;
 
