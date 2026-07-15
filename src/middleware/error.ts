@@ -16,7 +16,7 @@ export function errorHandler(
   err: unknown,
   req: Request,
   res: Response<ErrorResponse>,
-  next: NextFunction,
+  _next: NextFunction,
 ) {
   let statusCode: number | null = null;
   let message = 'Something went wrong!';
