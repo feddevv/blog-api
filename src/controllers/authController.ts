@@ -1,8 +1,9 @@
 import { Request, Response } from 'express';
 import { prisma } from '../db/prisma.js';
-import { hash } from 'bcrypt';
+import { hash, compare } from 'bcrypt';
 import { HttpError } from '../errors/HttpError.js';
-import { RegisterBody } from '../validation/schemas.js';
+import { LoginBody, RegisterBody } from '../validation/schemas.js';
+import jwt from 'jsonwebtoken';
 
 type TypedRequestBody<T> = Request<unknown, unknown, T>;
 
@@ -30,4 +31,28 @@ export async function register(req: TypedRequestBody<RegisterBody>, res: Respons
   });
 
   res.sendStatus(201);
+}
+
+export async function login(req: TypedRequestBody<LoginBody>, res: Response) {
+  const { username, password } = req.body;
+
+  const exist = await prisma.user.findUnique({
+    where: {
+      username,
+    },
+  });
+
+  if (!exist) {
+    throw new HttpError(401, 'Username or password is incorrect');
+  }
+
+  const isValidPassword = await compare(password, exist.password);
+
+  if (!isValidPassword) {
+    throw new HttpError(401, 'Username or password is incorrect');
+  }
+
+  const token = jwt.sign({ id: exist.id }, process.env.SECRET_KEY!, { expiresIn: '1d' });
+
+  res.json({ token });
 }
