@@ -36,23 +36,23 @@ export async function register(req: TypedRequestBody<RegisterBody>, res: Respons
 export async function login(req: TypedRequestBody<LoginBody>, res: Response) {
   const { username, password } = req.body;
 
-  const exist = await prisma.user.findUnique({
+  const user = await prisma.user.findUnique({
     where: {
       username,
     },
   });
 
-  if (!exist) {
+  if (!user) {
     throw new HttpError(401, 'Username or password is incorrect');
   }
 
-  const isValidPassword = await compare(password, exist.password);
+  const isValidPassword = await compare(password, user.password);
 
   if (!isValidPassword) {
     throw new HttpError(401, 'Username or password is incorrect');
   }
 
-  const token = jwt.sign({ id: exist.id }, process.env.SECRET_KEY!, { expiresIn: '1d' });
+  const token = jwt.sign({ id: user.id }, process.env.SECRET_KEY!, { expiresIn: '1d' });
 
   res.json({ token });
 }
