@@ -2,20 +2,38 @@ import { Request, Response, NextFunction } from 'express';
 import { HttpError } from '../errors/HttpError.js';
 import jwt from 'jsonwebtoken';
 
-export function authorize(req: Request, res: Response, next: NextFunction) {
-  const bearer = req.headers.authorization;
+interface AuthenticatedRequest extends Request {
+  user?: {
+    id: number;
+  };
+}
 
-  if (!bearer) {
-    throw new HttpError(401, 'Token not found');
+export function authorize(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith('Bearer')) {
+    throw new HttpError(401, 'Token not found or invalid format');
   }
 
-  const token = bearer.split(' ')[1];
+  const token = authHeader.split(' ')[1];
+  const secretKey = process.env.SECRET_KEY;
 
-  const isValid = jwt.verify(token, process.env.SECRET_KEY!);
+  if (!secretKey) {
+    throw new Error('SECRET_KEY is not defined in environment variables');
+  }
 
-  if (!isValid) {
+  try {
+    const decoded = jwt.verify(token, secretKey) as { id: number };
+
+    if (!decoded) {
+      throw new HttpError(401, 'Invalid or expired token');
+    }
+
+    req.user = { id: decoded.id };
+
+    next();
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (err) {
     throw new HttpError(401, 'Invalid or expired token');
   }
-
-  next();
 }
