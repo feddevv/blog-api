@@ -2,9 +2,11 @@ import { Router } from 'express';
 
 const router = Router();
 
-router.get('/posts', () => {});
-// router.get('/posts/:id', () => {});
-// router.get('/posts/admin', () => {});
-// router.post('/posts', () => {});
-// router.put('/posts/:id', () => {});
-// router.delete('/posts/:id', () => {});
+router.get('/', () => {});
+// router.get('/:id', () => {});
+// router.get('/admin', () => {});
+// router.post('/', () => {});
+// router.put('/:id', () => {});
+// router.delete('/:id', () => {});
+
+export { router };
