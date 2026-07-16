@@ -1,12 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
+import { AuthenticatedRequest } from '../types/types.js';
 import { HttpError } from '../errors/HttpError.js';
 import jwt from 'jsonwebtoken';
-
-interface AuthenticatedRequest extends Request {
-  user?: {
-    id: number;
-  };
-}
 
 export function authorize(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;

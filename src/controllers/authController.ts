@@ -1,13 +1,15 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { prisma } from '../db/prisma.js';
 import { hash, compare } from 'bcrypt';
 import { HttpError } from '../errors/HttpError.js';
 import { LoginBody, RegisterBody } from '../validation/schemas.js';
 import jwt from 'jsonwebtoken';
+import { AuthenticatedRequest } from '../types/types.js';
 
-type TypedRequestBody<T> = Request<unknown, unknown, T>;
-
-export async function register(req: TypedRequestBody<RegisterBody>, res: Response) {
+export async function register(
+  req: AuthenticatedRequest<unknown, unknown, RegisterBody>,
+  res: Response,
+) {
   const { username, email, password } = req.body;
 
   const existingUser = await prisma.user.findFirst({
@@ -33,7 +35,7 @@ export async function register(req: TypedRequestBody<RegisterBody>, res: Respons
   res.sendStatus(201);
 }
 
-export async function login(req: TypedRequestBody<LoginBody>, res: Response) {
+export async function login(req: AuthenticatedRequest<unknown, unknown, LoginBody>, res: Response) {
   const { username, password } = req.body;
 
   const secretKey = process.env.SECRET_KEY;
