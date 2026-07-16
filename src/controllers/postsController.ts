@@ -2,25 +2,13 @@ import { Response } from 'express';
 import { prisma } from '../db/prisma.js';
 import { AuthenticatedRequest } from '../types/types.js';
 import { Prisma } from '../generated/prisma/client.js';
-
-type PostState = 'PUBLISHED' | 'DRAFT' | 'HIDDEN';
-
-interface FilterQuery {
-  state?: PostState;
-  search?: string;
-  limit?: string;
-  page?: string;
-}
+import { FilterQueryOutput } from '../validation/schemas.js';
 
 export async function getPosts(
-  req: AuthenticatedRequest<unknown, unknown, unknown, FilterQuery>,
+  req: AuthenticatedRequest<unknown, unknown, unknown, FilterQueryOutput>,
   res: Response,
 ) {
   const { state, search, limit, page } = req.query;
-
-  const parsedLimit = limit ? parseInt(limit, 10) : 10;
-  const parsedPage = page ? parseInt(page, 10) : 1;
-  const skip = (parsedPage - 1) * parsedLimit;
 
   const where: Prisma.PostWhereInput = {};
 
@@ -35,8 +23,8 @@ export async function getPosts(
 
   const posts = await prisma.post.findMany({
     where,
-    take: parsedLimit,
-    skip,
+    take: limit,
+    skip: page,
     orderBy: {
       createdAt: 'desc',
     },

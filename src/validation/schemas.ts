@@ -55,7 +55,7 @@ export const loginBodySchema = z.object({
 export type LoginBody = z.infer<typeof loginBodySchema>;
 
 export const filterPostsQuerySchema = z.object({
-  state: z.enum(['PUBLISHED', 'UNPUBLISHED', 'HIDDEN']).optional(),
+  state: z.enum(['PUBLISHED', 'HIDDEN', 'DRAFT']).optional(),
   search: z.string().optional(),
   limit: z.transform((str) => (str ? parseInt(str as string, 10) : 10)).optional(),
   page: z.transform((str) => (str ? parseInt(str as string, 10) : 1)).optional(),
