@@ -1,18 +1,17 @@
-import express, { Request, Response } from 'express';
+import express from 'express';
 import 'dotenv/config';
-import { prisma } from './db/prisma.js';
+import { router as authRouter } from './routes/auth.js';
+import { errorHandler } from './middleware/error.js';
 
 const app = express();
 
-app.get('/', async (req: Request, res: Response) => {
-  const users = await prisma.user.findMany();
+app.use(express.json());
 
-  res.json({
-    users,
-  });
-});
+app.use('/api/auth', authRouter);
 
-const PORT = process.env.PORT || 5000;
+app.use(errorHandler);
+
+const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, (err) => {
   if (err) {
