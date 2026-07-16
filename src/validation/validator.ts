@@ -1,16 +1,28 @@
 import { NextFunction, Request, Response } from 'express';
 import { ZodType } from 'zod';
 
-export function validator<T>(schema: ZodType<T>) {
-  return (req: Request<unknown, unknown, T>, res: Response, next: NextFunction) => {
-    const result = schema.safeParse(req.body);
+interface RequestSchemas {
+  body?: ZodType<any, any, any>;
+  query?: ZodType<any, any, any>;
+  params?: ZodType<any, any, any>;
+}
 
-    if (!result.success) {
-      return next(result.error);
+export function validator(schemas: RequestSchemas) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (schemas.body) {
+        req.body = schemas.body.parse(req.body);
+      }
+      if (schemas.params) {
+        req.params = schemas.params.parse(req.params);
+      }
+      if (schemas.query) {
+        req.query = schemas.query.parse(req.query);
+      }
+
+      next();
+    } catch (err) {
+      next(err);
     }
-
-    req.body = result.data;
-
-    next();
   };
 }
