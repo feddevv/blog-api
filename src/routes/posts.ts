@@ -1,8 +1,9 @@
 import { Router } from 'express';
+import { getPosts } from '../controllers/postsController.js';
 
 const router = Router();
 
-router.get('/', () => {});
+router.get('/', getPosts);
 // router.get('/:id', () => {});
 // router.get('/admin', () => {});
 // router.post('/', () => {});
