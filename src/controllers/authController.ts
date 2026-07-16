@@ -36,6 +36,11 @@ export async function register(req: TypedRequestBody<RegisterBody>, res: Respons
 export async function login(req: TypedRequestBody<LoginBody>, res: Response) {
   const { username, password } = req.body;
 
+  const secretKey = process.env.SECRET_KEY;
+  if (!secretKey) {
+    throw new Error('SECRET_KEY is not defined in environment variables');
+  }
+
   const user = await prisma.user.findUnique({
     where: {
       username,
@@ -52,7 +57,7 @@ export async function login(req: TypedRequestBody<LoginBody>, res: Response) {
     throw new HttpError(401, 'Username or password is incorrect');
   }
 
-  const token = jwt.sign({ id: user.id }, process.env.SECRET_KEY!, { expiresIn: '1d' });
+  const token = jwt.sign({ id: user.id }, secretKey, { expiresIn: '1d' });
 
   res.json({ token });
 }
