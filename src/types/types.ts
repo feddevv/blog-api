@@ -3,9 +3,9 @@ import { ParamsDictionary } from 'express-serve-static-core';
 import { ParsedQs } from 'qs';
 
 export enum Role {
-  ADMIN,
-  USER,
-  EDITOR,
+  Admin = 'ADMIN',
+  User = 'USER',
+  Editor = 'EDITOR',
 }
 
 export interface AuthenticatedRequest<

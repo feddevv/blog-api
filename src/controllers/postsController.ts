@@ -12,7 +12,8 @@ export async function getPosts(
 
   const where: Prisma.PostWhereInput = {};
 
-  where.state = state ?? 'PUBLISHED';
+  const isAdmin = req.user?.role === 'ADMIN';
+  where.state = isAdmin ? state : 'PUBLISHED';
 
   if (search) {
     where.OR = [
