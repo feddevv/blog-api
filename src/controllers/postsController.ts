@@ -21,10 +21,12 @@ export async function getPosts(
     ];
   }
 
+  const skip = ((page ?? 1) - 1) * (limit ?? 10);
+
   const posts = await prisma.post.findMany({
     where,
     take: limit,
-    skip: page,
+    skip,
     orderBy: {
       createdAt: 'desc',
     },
