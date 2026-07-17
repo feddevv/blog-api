@@ -1,5 +1,5 @@
 import { Response, NextFunction } from 'express';
-import { AuthenticatedRequest } from '../types/types.js';
+import { AuthenticatedRequest, Role } from '../types/types.js';
 import { HttpError } from '../errors/HttpError.js';
 import jwt from 'jsonwebtoken';
 
@@ -18,13 +18,13 @@ export function authenticate(req: AuthenticatedRequest, res: Response, next: Nex
   }
 
   try {
-    const decoded = jwt.verify(token, secretKey) as { id: number };
+    const decoded = jwt.verify(token, secretKey) as { id: number; role: Role };
 
     if (!decoded) {
       throw new HttpError(401, 'Invalid or expired token');
     }
 
-    req.user = { id: decoded.id };
+    req.user = { id: decoded.id, role: decoded.role };
 
     next();
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -48,13 +48,13 @@ export function optionalAuthenticate(req: AuthenticatedRequest, res: Response, n
   }
 
   try {
-    const decoded = jwt.verify(token, secretKey) as { id: number };
+    const decoded = jwt.verify(token, secretKey) as { id: number; role: Role };
 
     if (!decoded) {
       throw new HttpError(401, 'Invalid or expired token');
     }
 
-    req.user = { id: decoded.id };
+    req.user = { id: decoded.id, role: decoded.role };
 
     next();
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
