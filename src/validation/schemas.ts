@@ -70,3 +70,10 @@ export const filterPostsQuerySchema = z.object({
 });
 
 export type FilterQueryOutput = z.infer<typeof filterPostsQuerySchema>;
+
+export const postParamsSchema = z.object({
+  id: z.coerce.number<string>().positive().optional(),
+});
+
+export type PostParamsInput = z.input<typeof postParamsSchema>;
+export type PostParamsOutput = z.infer<typeof postParamsSchema>;
