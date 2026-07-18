@@ -75,5 +75,19 @@ export const postParamsSchema = z.object({
   id: z.coerce.number<string>().positive().optional(),
 });
 
-export type PostParamsInput = z.input<typeof postParamsSchema>;
 export type PostParamsOutput = z.infer<typeof postParamsSchema>;
+
+export const createPostBodySchema = z.object({
+  title: z
+    .string({
+      error: (issue) => (issue.input === undefined ? 'Title is required' : 'Not a string'),
+    })
+    .min(5, 'Title must be at least 5 characters')
+    .max(255, 'Title must not exceed 255 characters'),
+
+  content: z.string().optional(),
+
+  state: z.enum(['PUBLISHED', 'HIDDEN', 'DRAFT']).optional(),
+});
+
+export type CreatePostBody = z.infer<typeof createPostBodySchema>;

@@ -2,7 +2,7 @@ import { Response } from 'express';
 import { prisma } from '../db/prisma.js';
 import { AuthenticatedRequest } from '../types/types.js';
 import { Prisma } from '../generated/prisma/client.js';
-import { FilterQueryOutput, PostParamsOutput } from '../validation/schemas.js';
+import { CreatePostBody, FilterQueryOutput, PostParamsOutput } from '../validation/schemas.js';
 import { HttpError } from '../errors/HttpError.js';
 
 export async function getPosts(
@@ -59,4 +59,24 @@ export async function getPostById(req: AuthenticatedRequest<PostParamsOutput>, r
   }
 
   res.json({ post });
+}
+
+export async function createPost(
+  req: AuthenticatedRequest<unknown, unknown, CreatePostBody>,
+  res: Response,
+) {
+  const { title, content, state } = req.body;
+
+  const userId = req.user!.id;
+
+  await prisma.post.create({
+    data: {
+      title,
+      content: content ?? '',
+      state,
+      userId,
+    },
+  });
+
+  res.sendStatus(201);
 }
