@@ -12,7 +12,7 @@ import { isAdmin } from '../middleware/checkRoles.js';
 const router = Router();
 
 router.get('/', validator({ query: filterPostsQuerySchema }), optionalAuthenticate, getPosts);
-router.get('/:id', validator({ params: postParamsSchema }), getPostById);
+router.get('/:id', validator({ params: postParamsSchema }), optionalAuthenticate, getPostById);
 router.post('/', validator({ body: createPostBodySchema }), authenticate, isAdmin, createPost);
 // router.put('/:id', () => {});
 // router.delete('/:id', () => {});

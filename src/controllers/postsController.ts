@@ -58,6 +58,13 @@ export async function getPostById(req: AuthenticatedRequest<PostParamsOutput>, r
     throw new HttpError(404, 'Post not found');
   }
 
+  if (
+    (post.state !== 'PUBLISHED' && !req.user) ||
+    (req.user && post.state !== 'PUBLISHED' && req.user.role !== 'ADMIN')
+  ) {
+    throw new HttpError(403, 'Forbidden: Admin access required');
+  }
+
   res.json({ post });
 }
 
