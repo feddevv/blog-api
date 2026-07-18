@@ -72,7 +72,7 @@ export async function createPost(
   await prisma.post.create({
     data: {
       title,
-      content: content ?? '',
+      content,
       state,
       userId,
     },
