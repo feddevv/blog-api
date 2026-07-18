@@ -76,7 +76,7 @@ export async function createPost(
 
   const userId = req.user!.id;
 
-  await prisma.post.create({
+  const post = await prisma.post.create({
     data: {
       title,
       content,
@@ -85,5 +85,5 @@ export async function createPost(
     },
   });
 
-  res.sendStatus(201);
+  res.status(201).json(post);
 }
