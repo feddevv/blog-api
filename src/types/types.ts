@@ -1,12 +1,7 @@
 import { Request } from 'express';
 import { ParamsDictionary } from 'express-serve-static-core';
 import { ParsedQs } from 'qs';
-
-export enum Role {
-  Admin = 'ADMIN',
-  User = 'USER',
-  Editor = 'EDITOR',
-}
+import { Role } from '../generated/prisma/enums.js';
 
 export interface AuthenticatedRequest<
   P = ParamsDictionary,
