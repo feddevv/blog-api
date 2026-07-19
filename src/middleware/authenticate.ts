@@ -1,6 +1,7 @@
 import { Response, NextFunction } from 'express';
-import { AuthenticatedRequest, Role } from '../types/types.js';
+import { AuthenticatedRequest } from '../types/types.js';
 import { HttpError } from '../errors/HttpError.js';
+import { Role } from '../generated/prisma/enums.js';
 import jwt from 'jsonwebtoken';
 
 export function authenticate(req: AuthenticatedRequest, res: Response, next: NextFunction) {
@@ -27,10 +28,8 @@ export function authenticate(req: AuthenticatedRequest, res: Response, next: Nex
     req.user = { id: decoded.id, role: decoded.role };
 
     next();
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (err) {
-    // TODO: REFACTOR. REPLACE WITH next(err)
-    throw new HttpError(401, 'Invalid or expired token');
+    next(err);
   }
 }
 
