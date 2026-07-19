@@ -21,15 +21,11 @@ export function authenticate(req: AuthenticatedRequest, res: Response, next: Nex
   try {
     const decoded = jwt.verify(token, secretKey) as { id: number; role: Role };
 
-    if (!decoded) {
-      throw new HttpError(401, 'Invalid or expired token');
-    }
-
     req.user = { id: decoded.id, role: decoded.role };
 
     next();
-  } catch (err) {
-    next(err);
+  } catch {
+    next(new HttpError(401, 'Invalid or expired token'));
   }
 }
 
@@ -50,15 +46,10 @@ export function optionalAuthenticate(req: AuthenticatedRequest, res: Response, n
   try {
     const decoded = jwt.verify(token, secretKey) as { id: number; role: Role };
 
-    if (!decoded) {
-      throw new HttpError(401, 'Invalid or expired token');
-    }
-
     req.user = { id: decoded.id, role: decoded.role };
 
     next();
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (err) {
-    throw new HttpError(401, 'Invalid or expired token');
+  } catch {
+    next(new HttpError(401, 'Invalid or expired token'));
   }
 }
