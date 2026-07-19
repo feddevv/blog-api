@@ -2,7 +2,12 @@ import { Response } from 'express';
 import { prisma } from '../db/prisma.js';
 import { AuthenticatedRequest } from '../types/types.js';
 import { Prisma } from '../generated/prisma/client.js';
-import { CreatePostBody, FilterQueryOutput, PostParamsOutput } from '../validation/schemas.js';
+import {
+  CreatePostBody,
+  FilterQueryOutput,
+  PostParamsOutput,
+  UpdatePostBody,
+} from '../validation/schemas.js';
 import { HttpError } from '../errors/HttpError.js';
 
 export async function getPosts(
@@ -86,4 +91,25 @@ export async function createPost(
   });
 
   res.status(201).json(post);
+}
+
+export async function updatePost(
+  req: AuthenticatedRequest<PostParamsOutput, unknown, UpdatePostBody>,
+  res: Response,
+) {
+  const { title, content, state } = req.body;
+  const { id } = req.params;
+
+  const updatedPost = await prisma.post.update({
+    where: {
+      id,
+    },
+    data: {
+      title,
+      content,
+      state,
+    },
+  });
+
+  res.json(updatedPost);
 }

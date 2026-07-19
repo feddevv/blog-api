@@ -13,3 +13,15 @@ export function isAdmin(req: AuthenticatedRequest, res: Response, next: NextFunc
 
   next();
 }
+
+export function isEditor(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  if (!req.user) {
+    throw new HttpError(401, 'Unauthorized');
+  }
+
+  if (req.user.role !== 'ADMIN' && req.user.role !== 'EDITOR') {
+    throw new HttpError(403, 'Forbidden: Admin or editor access required');
+  }
+
+  next();
+}

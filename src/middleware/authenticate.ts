@@ -29,6 +29,7 @@ export function authenticate(req: AuthenticatedRequest, res: Response, next: Nex
     next();
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (err) {
+    // TODO: REFACTOR. REPLACE WITH next(err)
     throw new HttpError(401, 'Invalid or expired token');
   }
 }
