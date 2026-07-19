@@ -113,3 +113,15 @@ export async function updatePost(
 
   res.json(updatedPost);
 }
+
+export async function deletePost(req: AuthenticatedRequest<PostParamsOutput>, res: Response) {
+  const { id } = req.params;
+
+  await prisma.post.delete({
+    where: {
+      id,
+    },
+  });
+
+  res.sendStatus(204);
+}

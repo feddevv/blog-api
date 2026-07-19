@@ -1,5 +1,11 @@
 import { Router } from 'express';
-import { getPosts, getPostById, createPost, updatePost } from '../controllers/postsController.js';
+import {
+  getPosts,
+  getPostById,
+  createPost,
+  updatePost,
+  deletePost,
+} from '../controllers/postsController.js';
 import { validator } from '../validation/validator.js';
 import {
   createPostBodySchema,
@@ -22,6 +28,6 @@ router.put(
   isEditor,
   updatePost,
 );
-// router.delete('/:id', () => {});
+router.delete('/:id', validator({ params: postParamsSchema }), authenticate, isAdmin, deletePost);
 
 export { router };
