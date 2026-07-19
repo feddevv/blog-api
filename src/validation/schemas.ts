@@ -55,17 +55,19 @@ export const loginBodySchema = z.object({
 export type LoginBody = z.infer<typeof loginBodySchema>;
 
 export const filterPostsQuerySchema = z.object({
-  state: z.enum(['PUBLISHED', 'HIDDEN', 'DRAFT']).optional(),
-  search: z.string().optional(),
+  state: z
+    .enum(['PUBLISHED', 'HIDDEN', 'DRAFT'], 'Must be one of (PUBLISHED, HIDDEN, DRAFT)')
+    .optional(),
+  search: z.string('Not a string').optional(),
   limit: z
     .string()
     .transform((str) => (str ? parseInt(str, 10) : 10))
-    .pipe(z.number().int().positive())
+    .pipe(z.number('Not a number').int('Must be an integer').positive('Must be positive'))
     .optional(),
   page: z
     .string()
     .transform((str) => (str ? parseInt(str, 10) : 1))
-    .pipe(z.number().int().positive())
+    .pipe(z.number('Not a number').int('Must be an integer').positive('Must be positive'))
     .optional(),
 });
 
