@@ -47,7 +47,7 @@ export async function getPostById(req: AuthenticatedRequest<PostParamsOutput>, r
 
   const post = await prisma.post.findUnique({
     where: {
-      id,
+      id: Number(id),
     },
     include: {
       comments: {
@@ -102,7 +102,7 @@ export async function updatePost(
 
   const updatedPost = await prisma.post.update({
     where: {
-      id,
+      id: Number(id),
     },
     data: {
       title,
@@ -119,7 +119,7 @@ export async function deletePost(req: AuthenticatedRequest<PostParamsOutput>, re
 
   await prisma.post.delete({
     where: {
-      id,
+      id: Number(id),
     },
   });
 

@@ -74,7 +74,14 @@ export const filterPostsQuerySchema = z.object({
 export type FilterQueryOutput = z.infer<typeof filterPostsQuerySchema>;
 
 export const postParamsSchema = z.object({
-  id: z.coerce.number<string>().positive().optional(),
+  // TODO: CHANGE IT SO THAT ID IS A NUMBER AFTER VALIDATION
+  id: z.coerce
+    .number<string>({
+      error: (issue) => (issue.input === undefined ? 'ID is required' : 'Must be a number'),
+    })
+    .int('Must be an integer')
+    .positive('Must be positive')
+    .transform((num) => String(num)),
 });
 
 export type PostParamsOutput = z.infer<typeof postParamsSchema>;
