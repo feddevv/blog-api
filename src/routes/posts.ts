@@ -12,7 +12,7 @@ import {
   filterPostsQuerySchema,
   postParamsSchema,
   updatePostBodySchema,
-} from '../validation/schemas.js';
+} from '../validation/postsSchemas.js';
 import { authenticate, optionalAuthenticate } from '../middleware/authenticate.js';
 import { isAdmin, isEditor } from '../middleware/checkRoles.js';
 import { router as nestedCommentsRouter } from './nestedComments.js';

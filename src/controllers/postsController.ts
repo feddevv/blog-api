@@ -5,9 +5,9 @@ import { Prisma } from '../generated/prisma/client.js';
 import {
   CreatePostBody,
   FilterQueryOutput,
-  PostParamsOutput,
+  PostParams,
   UpdatePostBody,
-} from '../validation/schemas.js';
+} from '../validation/postsSchemas.js';
 import { HttpError } from '../errors/HttpError.js';
 
 export async function getPosts(
@@ -42,7 +42,7 @@ export async function getPosts(
   res.json({ posts });
 }
 
-export async function getPostById(req: AuthenticatedRequest<PostParamsOutput>, res: Response) {
+export async function getPostById(req: AuthenticatedRequest<PostParams>, res: Response) {
   const { postId } = req.params;
 
   const post = await prisma.post.findUnique({
@@ -94,7 +94,7 @@ export async function createPost(
 }
 
 export async function updatePost(
-  req: AuthenticatedRequest<PostParamsOutput, unknown, UpdatePostBody>,
+  req: AuthenticatedRequest<PostParams, unknown, UpdatePostBody>,
   res: Response,
 ) {
   const { title, content, state } = req.body;
@@ -114,7 +114,7 @@ export async function updatePost(
   res.json(updatedPost);
 }
 
-export async function deletePost(req: AuthenticatedRequest<PostParamsOutput>, res: Response) {
+export async function deletePost(req: AuthenticatedRequest<PostParams>, res: Response) {
   const { postId } = req.params;
 
   await prisma.post.delete({

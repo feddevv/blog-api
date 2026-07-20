@@ -1,13 +1,10 @@
 import { Response } from 'express';
 import { AuthenticatedRequest } from '../types/types.js';
-import { CommentsParamsOutput } from '../validation/commentsSchemas.js';
+import { CommentsParams } from '../validation/commentsSchemas.js';
 import { prisma } from '../db/prisma.js';
 import { HttpError } from '../errors/HttpError.js';
 
-export async function getCommentById(
-  req: AuthenticatedRequest<CommentsParamsOutput>,
-  res: Response,
-) {
+export async function getCommentById(req: AuthenticatedRequest<CommentsParams>, res: Response) {
   const { commentId } = req.params;
 
   const comment = await prisma.comment.findUnique({
