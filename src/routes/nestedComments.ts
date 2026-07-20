@@ -8,6 +8,11 @@ import { authenticate, optionalAuthenticate } from '../middleware/authenticate.j
 const router = Router({ mergeParams: true });
 
 router.get('/', validator({ params: postParamsSchema }), optionalAuthenticate, getPostComments);
-router.post('/', validator({ body: createCommentBodySchema }), authenticate, createComment);
+router.post(
+  '/',
+  validator({ body: createCommentBodySchema, params: postParamsSchema }),
+  authenticate,
+  createComment,
+);
 
 export { router };
