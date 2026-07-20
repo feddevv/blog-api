@@ -12,9 +12,12 @@ import { PostParams } from '../validation/postsSchemas.js';
 export async function getCommentById(req: AuthenticatedRequest<CommentsParams>, res: Response) {
   const { commentId } = req.params;
 
-  const comment = await prisma.comment.findUnique({
+  const comment = await prisma.comment.findFirst({
     where: {
       id: Number(commentId),
+      post: {
+        state: 'PUBLISHED',
+      },
     },
   });
 
