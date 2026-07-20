@@ -15,6 +15,7 @@ import {
 } from '../validation/schemas.js';
 import { authenticate, optionalAuthenticate } from '../middleware/authenticate.js';
 import { isAdmin, isEditor } from '../middleware/checkRoles.js';
+import { router as nestedCommentsRouter } from './nestedComments.js';
 
 const router = Router();
 
@@ -29,5 +30,7 @@ router.put(
   updatePost,
 );
 router.delete('/:id', validator({ params: postParamsSchema }), authenticate, isAdmin, deletePost);
+
+router.use('/:id/comments', nestedCommentsRouter);
 
 export { router };
