@@ -96,6 +96,7 @@ export async function getPostComments(req: AuthenticatedRequest<PostParams>, res
     },
     select: {
       id: true,
+      state: true,
     },
   });
 
@@ -103,13 +104,12 @@ export async function getPostComments(req: AuthenticatedRequest<PostParams>, res
     throw new HttpError(404, 'Post not found');
   }
 
-  const comments = await prisma.comment.findMany({
-    where: {
-      postId: Number(postId),
-    },
-  });
-
-  res.json(comments);
+  if (
+    (post.state !== 'PUBLISHED' && !req.user) ||
+    (post.state !== 'PUBLISHED' && req.user && req.user.role !== 'ADMIN')
+  ) {
+    throw new HttpError(403, 'Forbidden: Admin access required');
+  }
 }
 
 export async function createComment(
