@@ -15,7 +15,7 @@ export const createCommentBodySchema = z.object({
       error: (issue) => (issue.input === undefined ? 'Content is required' : 'Not a string'),
     })
     .trim()
-    .min(1, 'Must be at least 1 characters')
+    .min(1, 'Must be at least 1 character')
     .max(400, 'Must not exceed 400 characters'),
 });
 
