@@ -20,17 +20,23 @@ import { router as nestedCommentsRouter } from './nestedComments.js';
 const router = Router();
 
 router.get('/', validator({ query: filterPostsQuerySchema }), optionalAuthenticate, getPosts);
-router.get('/:id', validator({ params: postParamsSchema }), optionalAuthenticate, getPostById);
+router.get('/:postId', validator({ params: postParamsSchema }), optionalAuthenticate, getPostById);
 router.post('/', validator({ body: createPostBodySchema }), authenticate, isAdmin, createPost);
 router.put(
-  '/:id',
+  '/:postId',
   validator({ body: updatePostBodySchema, params: postParamsSchema }),
   authenticate,
   isEditor,
   updatePost,
 );
-router.delete('/:id', validator({ params: postParamsSchema }), authenticate, isAdmin, deletePost);
+router.delete(
+  '/:postId',
+  validator({ params: postParamsSchema }),
+  authenticate,
+  isAdmin,
+  deletePost,
+);
 
-router.use('/:id/comments', nestedCommentsRouter);
+router.use('/:postId/comments', nestedCommentsRouter);
 
 export { router };

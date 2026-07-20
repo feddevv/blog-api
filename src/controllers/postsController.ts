@@ -43,11 +43,11 @@ export async function getPosts(
 }
 
 export async function getPostById(req: AuthenticatedRequest<PostParamsOutput>, res: Response) {
-  const { id } = req.params;
+  const { postId } = req.params;
 
   const post = await prisma.post.findUnique({
     where: {
-      id: Number(id),
+      id: Number(postId),
     },
     include: {
       comments: {
@@ -98,11 +98,11 @@ export async function updatePost(
   res: Response,
 ) {
   const { title, content, state } = req.body;
-  const { id } = req.params;
+  const { postId } = req.params;
 
   const updatedPost = await prisma.post.update({
     where: {
-      id: Number(id),
+      id: Number(postId),
     },
     data: {
       title,
@@ -115,11 +115,11 @@ export async function updatePost(
 }
 
 export async function deletePost(req: AuthenticatedRequest<PostParamsOutput>, res: Response) {
-  const { id } = req.params;
+  const { postId } = req.params;
 
   await prisma.post.delete({
     where: {
-      id: Number(id),
+      id: Number(postId),
     },
   });
 

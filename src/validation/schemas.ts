@@ -75,7 +75,7 @@ export type FilterQueryOutput = z.infer<typeof filterPostsQuerySchema>;
 
 export const postParamsSchema = z.object({
   // TODO: CHANGE IT SO THAT ID IS A NUMBER AFTER VALIDATION
-  id: z.coerce
+  postId: z.coerce
     .number<string>({
       error: (issue) => (issue.input === undefined ? 'ID is required' : 'Must be a number'),
     })
