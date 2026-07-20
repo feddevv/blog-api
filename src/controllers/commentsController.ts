@@ -1,6 +1,10 @@
 import { Response } from 'express';
 import { AuthenticatedRequest } from '../types/types.js';
-import { CommentsParams, CreateCommentBody } from '../validation/commentsSchemas.js';
+import {
+  CommentsParams,
+  CreateCommentBody,
+  UpdateCommentBody,
+} from '../validation/commentsSchemas.js';
 import { prisma } from '../db/prisma.js';
 import { HttpError } from '../errors/HttpError.js';
 import { PostParams } from '../validation/postsSchemas.js';
@@ -22,7 +26,7 @@ export async function getCommentById(req: AuthenticatedRequest<CommentsParams>, 
 }
 
 export async function updateComment(
-  req: AuthenticatedRequest<CommentsParams, unknown, CreateCommentBody>,
+  req: AuthenticatedRequest<CommentsParams, unknown, UpdateCommentBody>,
   res: Response,
 ) {
   const { commentId } = req.params;
@@ -103,4 +107,32 @@ export async function getPostComments(req: AuthenticatedRequest<PostParams>, res
   });
 
   res.json(comments);
+}
+
+export async function createComment(
+  req: AuthenticatedRequest<PostParams, unknown, CreateCommentBody>,
+  res: Response,
+) {
+  const { postId } = req.params;
+  const { content } = req.body;
+
+  const post = await prisma.post.findUnique({
+    where: {
+      id: Number(postId),
+    },
+  });
+
+  if (!post) {
+    throw new HttpError(404, 'Post not found');
+  }
+
+  const comment = await prisma.comment.create({
+    data: {
+      postId: Number(postId),
+      content,
+      userId: req.user!.id,
+    },
+  });
+
+  res.json(comment);
 }
