@@ -42,7 +42,7 @@ export async function updateComment(
     throw new HttpError(404, 'Comment not found');
   }
 
-  if (req.user!.id !== existingComment.userId) {
+  if (req.user!.id !== existingComment.userId && req.user!.role !== 'ADMIN') {
     throw new HttpError(403, "You don't have access to update this comment");
   }
 
@@ -71,7 +71,7 @@ export async function deleteComment(req: AuthenticatedRequest<CommentsParams>, r
     throw new HttpError(404, 'Comment not found');
   }
 
-  if (req.user!.id !== existing.userId) {
+  if (req.user!.id !== existing.userId && req.user!.role !== 'ADMIN') {
     throw new HttpError(403, "You don't have access to delete this comment");
   }
 
