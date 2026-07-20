@@ -52,3 +52,29 @@ export async function updateComment(
 
   res.json(updated);
 }
+
+export async function deleteComment(req: AuthenticatedRequest<CommentsParams>, res: Response) {
+  const { commentId } = req.params;
+
+  const existing = await prisma.comment.findUnique({
+    where: {
+      id: Number(commentId),
+    },
+  });
+
+  if (!existing) {
+    throw new HttpError(404, 'Comment not found');
+  }
+
+  if (req.user!.id !== existing.userId) {
+    throw new HttpError(403, "You don't have access to delete this comment");
+  }
+
+  await prisma.comment.delete({
+    where: {
+      id: Number(commentId),
+    },
+  });
+
+  res.sendStatus(204);
+}
