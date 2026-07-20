@@ -110,6 +110,14 @@ export async function getPostComments(req: AuthenticatedRequest<PostParams>, res
   ) {
     throw new HttpError(403, 'Forbidden: Admin access required');
   }
+
+  const comments = await prisma.comment.findMany({
+    where: {
+      postId: Number(postId),
+    },
+  });
+
+  res.json(comments);
 }
 
 export async function createComment(
