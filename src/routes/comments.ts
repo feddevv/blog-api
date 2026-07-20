@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getCommentById, updateComment } from '../controllers/commentsController.js';
+import { deleteComment, getCommentById, updateComment } from '../controllers/commentsController.js';
 import { validator } from '../validation/validator.js';
 import { commentsParamsSchema, createCommentBodySchema } from '../validation/commentsSchemas.js';
 import { authenticate } from '../middleware/authenticate.js';
@@ -13,6 +13,11 @@ router.put(
   authenticate,
   updateComment,
 );
-router.delete('/:commentId', (req, res) => {});
+router.delete(
+  '/:commentId',
+  validator({ params: commentsParamsSchema }),
+  authenticate,
+  deleteComment,
+);
 
 export { router };

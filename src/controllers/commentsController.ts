@@ -3,6 +3,7 @@ import { AuthenticatedRequest } from '../types/types.js';
 import { CommentsParams, CreateCommentBody } from '../validation/commentsSchemas.js';
 import { prisma } from '../db/prisma.js';
 import { HttpError } from '../errors/HttpError.js';
+import { PostParams } from '../validation/postsSchemas.js';
 
 export async function getCommentById(req: AuthenticatedRequest<CommentsParams>, res: Response) {
   const { commentId } = req.params;
@@ -77,4 +78,29 @@ export async function deleteComment(req: AuthenticatedRequest<CommentsParams>, r
   });
 
   res.sendStatus(204);
+}
+
+export async function getPostComments(req: AuthenticatedRequest<PostParams>, res: Response) {
+  const { postId } = req.params;
+
+  const post = await prisma.post.findUnique({
+    where: {
+      id: Number(postId),
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!post) {
+    throw new HttpError(404, 'Post not found');
+  }
+
+  const comments = await prisma.comment.findMany({
+    where: {
+      postId: Number(postId),
+    },
+  });
+
+  res.json(comments);
 }
