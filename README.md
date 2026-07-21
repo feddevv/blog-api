@@ -2,6 +2,12 @@
 
 An Express + TypeScript REST API for blog content, posts, and comments. The project uses Prisma with PostgreSQL, JWT-based authentication, and role-based authorization for protected actions.
 
+## Swagger / OpenAPI
+
+The API is documented with an OpenAPI 3.0 specification in [openapi.yaml](openapi.yaml). When the application is running, the Swagger UI is available at `/api-docs`.
+
+Use Swagger UI to explore endpoints, inspect request and response schemas, and test authenticated requests with a Bearer token.
+
 ## Tech Stack
 
 - TypeScript
@@ -101,5 +107,7 @@ The folders below are organized by responsibility:
 
 ## Project Docs
 
+- [OpenAPI Specification](openapi.yaml)
+- [Swagger UI](http://localhost:3000/api-docs)
 - [Architecture Overview](docs/architecture.md)
 - [Database Models](docs/database-models.md)

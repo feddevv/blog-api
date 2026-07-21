@@ -1,0 +1,712 @@
+openapi: 3.0.3
+info:
+  title: Blog API
+  version: 1.0.0
+  description: >-
+    REST API for blog posts, comments, and user authentication. The API uses
+    PostgreSQL with Prisma, JWT authentication, and role-based authorization.
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+tags:
+  - name: Auth
+    description: Authentication and account creation endpoints
+  - name: Posts
+    description: Blog post listing and management endpoints
+  - name: Comments
+    description: Comment management endpoints
+paths:
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new user
+      description: >-
+        Creates a new account with a unique username and email address. The
+        password is validated, hashed, and stored securely.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            example:
+              username: john_doe
+              email: john@example.com
+              password: secret123
+      responses:
+        '201':
+          description: User registered successfully. No response body is returned.
+        '409':
+          $ref: '#/components/responses/ConflictResponse'
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Log in and receive a JWT
+      description: >-
+        Verifies the username and password, then returns a signed JWT token
+        that should be sent in the Authorization header using the Bearer scheme.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              username: john_doe
+              password: secret123
+      responses:
+        '200':
+          description: Authentication succeeded and a token is returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+              example:
+                token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+
+  /api/posts:
+    get:
+      tags: [Posts]
+      summary: List posts
+      description: >-
+        Returns posts ordered by newest first. Anonymous users receive only
+        published posts. Authenticated admin users can filter by state.
+      security:
+        - {}
+        - bearerAuth: []
+      parameters:
+        - name: state
+          in: query
+          required: false
+          description: >-
+            Optional post state filter. Non-admin users are always limited to
+            published posts even if another state is provided.
+          schema:
+            $ref: '#/components/schemas/PostState'
+        - name: search
+          in: query
+          required: false
+          description: Search text applied to post title and content.
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          description: Number of posts to return per page. Defaults to 10.
+          schema:
+            type: integer
+            minimum: 1
+            default: 10
+        - name: page
+          in: query
+          required: false
+          description: Page number for pagination. Defaults to 1.
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+      responses:
+        '200':
+          description: A paginated list of posts.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostsListResponse'
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+    post:
+      tags: [Posts]
+      summary: Create a new post
+      description: >-
+        Creates a post for the authenticated user. This endpoint is restricted
+        to users with the ADMIN role.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePostRequest'
+            example:
+              title: My first post
+              content: This is the body of the post.
+              state: DRAFT
+      responses:
+        '201':
+          description: Post created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+
+  /api/posts/{postId}:
+    get:
+      tags: [Posts]
+      summary: Get a post by id
+      description: >-
+        Returns a single post with its latest comments. Public requests can
+        read published posts. Hidden or draft posts require an ADMIN token.
+      security:
+        - {}
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PostId'
+      responses:
+        '200':
+          description: The requested post and its comments.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostWithCommentsResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+    put:
+      tags: [Posts]
+      summary: Update a post
+      description: >-
+        Updates the provided post fields. This endpoint is restricted to users
+        with the ADMIN or EDITOR role.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PostId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePostRequest'
+            example:
+              title: Updated post title
+              content: Updated content
+              state: PUBLISHED
+      responses:
+        '200':
+          description: Post updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+    delete:
+      tags: [Posts]
+      summary: Delete a post
+      description: >-
+        Deletes a post by id. This endpoint is restricted to users with the
+        ADMIN role.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PostId'
+      responses:
+        '204':
+          description: Post deleted successfully. No response body is returned.
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+
+  /api/posts/{postId}/comments:
+    get:
+      tags: [Comments]
+      summary: List comments for a post
+      description: >-
+        Returns all comments for the selected post. Public requests can read
+        comments only for published posts. Draft or hidden posts require an
+        ADMIN token.
+      security:
+        - {}
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PostId'
+      responses:
+        '200':
+          description: A list of comments for the post.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentsListResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+    post:
+      tags: [Comments]
+      summary: Create a comment for a post
+      description: >-
+        Creates a comment for the selected post. Authentication is required.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PostId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCommentRequest'
+            example:
+              content: Nice post!
+      responses:
+        '200':
+          description: Comment created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+
+  /api/comments/{commentId}:
+    get:
+      tags: [Comments]
+      summary: Get a comment by id
+      description: >-
+        Returns a single comment if the parent post is published. Comments on
+        hidden or draft posts are not exposed by this endpoint.
+      parameters:
+        - $ref: '#/components/parameters/CommentId'
+      responses:
+        '200':
+          description: The requested comment.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+    put:
+      tags: [Comments]
+      summary: Update a comment
+      description: >-
+        Updates the comment content. The caller must be the comment owner or an
+        ADMIN user.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CommentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCommentRequest'
+            example:
+              content: Updated comment text
+      responses:
+        '200':
+          description: Comment updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+    delete:
+      tags: [Comments]
+      summary: Delete a comment
+      description: >-
+        Deletes a comment. The caller must be the comment owner or an ADMIN
+        user.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CommentId'
+      responses:
+        '204':
+          description: Comment deleted successfully. No response body is returned.
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >-
+        Provide the JWT returned by the login endpoint in the Authorization
+        header as `Bearer <token>`.
+
+  parameters:
+    PostId:
+      name: postId
+      in: path
+      required: true
+      description: Numeric post identifier.
+      schema:
+        type: integer
+        minimum: 1
+    CommentId:
+      name: commentId
+      in: path
+      required: true
+      description: Numeric comment identifier.
+      schema:
+        type: integer
+        minimum: 1
+
+  schemas:
+    Role:
+      type: string
+      description: User role used for authorization checks.
+      enum: [USER, EDITOR, ADMIN]
+    PostState:
+      type: string
+      description: Post visibility and publication state.
+      enum: [DRAFT, PUBLISHED, HIDDEN]
+    RegisterRequest:
+      type: object
+      additionalProperties: false
+      required: [username, email, password]
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+          pattern: '^[a-zA-Z0-9_-]+$'
+          description: Unique username using letters, numbers, underscores, or hyphens.
+        email:
+          type: string
+          format: email
+          maxLength: 255
+          description: Unique email address for the new account.
+        password:
+          type: string
+          minLength: 8
+          maxLength: 120
+          description: Account password that will be hashed before storage.
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+          pattern: '^[a-zA-Z0-9_-]+$'
+          description: Username used to authenticate the user.
+        password:
+          type: string
+          minLength: 8
+          maxLength: 120
+          description: Password associated with the account.
+    TokenResponse:
+      type: object
+      additionalProperties: false
+      required: [token]
+      properties:
+        token:
+          type: string
+          description: JWT that should be sent in the Authorization header.
+    CreatePostRequest:
+      type: object
+      additionalProperties: false
+      required: [title]
+      properties:
+        title:
+          type: string
+          minLength: 5
+          maxLength: 255
+          description: Post title.
+        content:
+          type: string
+          description: Optional post content.
+        state:
+          allOf:
+            - $ref: '#/components/schemas/PostState'
+          description: Optional state for the new post. Defaults to DRAFT.
+    UpdatePostRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          minLength: 5
+          maxLength: 255
+          description: Updated post title.
+        content:
+          type: string
+          description: Updated post content.
+        state:
+          allOf:
+            - $ref: '#/components/schemas/PostState'
+          description: Updated post state.
+    CreateCommentRequest:
+      type: object
+      additionalProperties: false
+      required: [content]
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 400
+          description: Comment text.
+    UpdateCommentRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        content:
+          type: string
+          description: Updated comment text.
+    User:
+      type: object
+      additionalProperties: false
+      required: [id, username, email, role]
+      properties:
+        id:
+          type: integer
+          format: int32
+          description: Unique user identifier.
+        username:
+          type: string
+          description: Unique username.
+        email:
+          type: string
+          format: email
+          description: Unique email address.
+        role:
+          allOf:
+            - $ref: '#/components/schemas/Role'
+    Post:
+      type: object
+      additionalProperties: false
+      required: [id, title, createdAt, updatedAt, userId, state]
+      properties:
+        id:
+          type: integer
+          format: int32
+          description: Unique post identifier.
+        title:
+          type: string
+          description: Post title.
+        content:
+          type: string
+          nullable: true
+          description: Optional post content.
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp.
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp.
+        userId:
+          type: integer
+          format: int32
+          description: Identifier of the authoring user.
+        state:
+          $ref: '#/components/schemas/PostState'
+        comments:
+          type: array
+          description: Comments are included only in the single post response.
+          items:
+            $ref: '#/components/schemas/Comment'
+    PostWithCommentsResponse:
+      type: object
+      additionalProperties: false
+      required: [post]
+      properties:
+        post:
+          allOf:
+            - $ref: '#/components/schemas/Post'
+            - type: object
+              properties:
+                comments:
+                  type: array
+                  description: Latest comments attached to the post.
+                  items:
+                    $ref: '#/components/schemas/Comment'
+    Comment:
+      type: object
+      additionalProperties: false
+      required: [id, content, createdAt, updatedAt, userId, postId]
+      properties:
+        id:
+          type: integer
+          format: int32
+          description: Unique comment identifier.
+        content:
+          type: string
+          description: Comment text.
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp.
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp.
+        userId:
+          type: integer
+          format: int32
+          description: Identifier of the commenting user.
+        postId:
+          type: integer
+          format: int32
+          description: Identifier of the parent post.
+    PostsListResponse:
+      type: object
+      additionalProperties: false
+      required: [posts]
+      properties:
+        posts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Post'
+    CommentsListResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/Comment'
+    ErrorDetail:
+      type: object
+      additionalProperties: false
+      required: [message, path]
+      properties:
+        message:
+          type: string
+          description: Human-readable validation message.
+        path:
+          type: string
+          description: Field path that failed validation.
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      required: [message]
+      properties:
+        message:
+          type: string
+          description: Error message returned by the API.
+        errors:
+          type: array
+          description: Validation errors when request validation fails.
+          items:
+            $ref: '#/components/schemas/ErrorDetail'
+
+  responses:
+    UnauthorizedResponse:
+      description: Authentication failed or the JWT token is missing or invalid.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: Invalid or expired token
+    ForbiddenResponse:
+      description: The authenticated user is not allowed to access this resource.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: 'Forbidden: Admin access required'
+    NotFoundResponse:
+      description: The requested resource was not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: Post not found
+    ConflictResponse:
+      description: The request conflicts with an existing resource.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: Username or email is already taken
+    ValidationErrorResponse:
+      description: The request payload failed validation.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: Validation failed
+            errors:
+              - message: Must be at least 5 characters
+                path: title
+    InternalServerErrorResponse:
+      description: An unexpected server error occurred.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: Something went wrong!

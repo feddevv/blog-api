@@ -4,6 +4,8 @@ import { router as authRouter } from './routes/auth.js';
 import { router as postsRouter } from './routes/posts.js';
 import { router as commentsRouter } from './routes/comments.js';
 import { errorHandler } from './middleware/error.js';
+import swaggerUi from 'swagger-ui-express';
+import YAML from 'yamljs';
 
 const app = express();
 
@@ -18,6 +20,10 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
   next();
 });
+
+// SWAGGER UI
+const swaggerJSON = YAML.load('openapi.yaml');
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerJSON));
 
 app.use('/api/auth', authRouter);
 app.use('/api/posts', postsRouter);
