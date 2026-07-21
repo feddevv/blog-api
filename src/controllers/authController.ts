@@ -2,7 +2,7 @@ import { Response } from 'express';
 import { prisma } from '../db/prisma.js';
 import { hash, compare } from 'bcrypt';
 import { HttpError } from '../errors/HttpError.js';
-import { LoginBody, RegisterBody } from '../validation/schemas.js';
+import { LoginBody, RegisterBody } from '../validation/authSchemas.js';
 import jwt from 'jsonwebtoken';
 import { AuthenticatedRequest } from '../types/types.js';
 
