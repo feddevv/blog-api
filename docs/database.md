@@ -29,6 +29,7 @@ erDiagram
 		int id PK
 		string title
 		string content
+		string description
 		datetime createdAt
 		datetime updatedAt
 		int userId FK
