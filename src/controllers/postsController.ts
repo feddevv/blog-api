@@ -127,14 +127,26 @@ export async function updatePost(
   }
 }
 
-export async function deletePost(req: AuthenticatedRequest<PostParams>, res: Response) {
-  const { postId } = req.params;
+export async function deletePost(
+  req: AuthenticatedRequest<PostParams>,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const { postId } = req.params;
 
-  await prisma.post.delete({
-    where: {
-      id: Number(postId),
-    },
-  });
+    await prisma.post.delete({
+      where: {
+        id: Number(postId),
+      },
+    });
 
-  res.sendStatus(204);
+    res.sendStatus(204);
+  } catch (err) {
+    if (err instanceof PrismaClientKnownRequestError && err.code === 'P2025') {
+      return next(new HttpError(404, 'Post not found'));
+    }
+
+    next(err);
+  }
 }
