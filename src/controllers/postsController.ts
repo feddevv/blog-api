@@ -25,6 +25,7 @@ export async function getPosts(
     where.OR = [
       { title: { contains: search, mode: 'insensitive' } },
       { content: { contains: search, mode: 'insensitive' } },
+      { description: { contains: search, mode: 'insensitive' } },
     ];
   }
 
