@@ -110,4 +110,4 @@ The folders below are organized by responsibility:
 - [OpenAPI Specification](openapi.yaml)
 - [Swagger UI](http://localhost:3000/api-docs)
 - [Architecture Overview](docs/architecture.md)
-- [Database Models](docs/database-models.md)
+- [Database](docs/database.md)
