@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { NextFunction, Response } from 'express';
 import { prisma } from '../db/prisma.js';
 import { AuthenticatedRequest } from '../types/types.js';
 import { Prisma } from '../generated/prisma/client.js';
@@ -9,6 +9,7 @@ import {
   UpdatePostBody,
 } from '../validation/postsSchemas.js';
 import { HttpError } from '../errors/HttpError.js';
+import { PrismaClientKnownRequestError } from '../generated/prisma/internal/prismaNamespace.js';
 
 export async function getPosts(
   req: AuthenticatedRequest<unknown, unknown, unknown, FilterQueryOutput>,
@@ -98,23 +99,32 @@ export async function createPost(
 export async function updatePost(
   req: AuthenticatedRequest<PostParams, unknown, UpdatePostBody>,
   res: Response,
+  next: NextFunction,
 ) {
-  const { title, content, state, description } = req.body;
-  const { postId } = req.params;
+  try {
+    const { title, content, state, description } = req.body;
+    const { postId } = req.params;
 
-  const updatedPost = await prisma.post.update({
-    where: {
-      id: Number(postId),
-    },
-    data: {
-      title,
-      content,
-      state,
-      description,
-    },
-  });
+    const updatedPost = await prisma.post.update({
+      where: {
+        id: Number(postId),
+      },
+      data: {
+        title,
+        content,
+        state,
+        description,
+      },
+    });
 
-  res.json(updatedPost);
+    res.json(updatedPost);
+  } catch (err) {
+    if (err instanceof PrismaClientKnownRequestError && err.code === 'P2025') {
+      return next(new HttpError(404, 'Post not found'));
+    }
+
+    next(err);
+  }
 }
 
 export async function deletePost(req: AuthenticatedRequest<PostParams>, res: Response) {
