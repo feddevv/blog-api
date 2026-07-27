@@ -25,6 +25,7 @@ export async function getPosts(
     where.OR = [
       { title: { contains: search, mode: 'insensitive' } },
       { content: { contains: search, mode: 'insensitive' } },
+      { description: { contains: search, mode: 'insensitive' } },
     ];
   }
 
@@ -77,7 +78,7 @@ export async function createPost(
   req: AuthenticatedRequest<unknown, unknown, CreatePostBody>,
   res: Response,
 ) {
-  const { title, content, state } = req.body;
+  const { title, content, state, description } = req.body;
 
   const userId = req.user!.id;
 
@@ -87,6 +88,7 @@ export async function createPost(
       content,
       state,
       userId,
+      description,
     },
   });
 
@@ -97,7 +99,7 @@ export async function updatePost(
   req: AuthenticatedRequest<PostParams, unknown, UpdatePostBody>,
   res: Response,
 ) {
-  const { title, content, state } = req.body;
+  const { title, content, state, description } = req.body;
   const { postId } = req.params;
 
   const updatedPost = await prisma.post.update({
@@ -108,6 +110,7 @@ export async function updatePost(
       title,
       content,
       state,
+      description,
     },
   });
 
