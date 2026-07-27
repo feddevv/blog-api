@@ -31,7 +31,10 @@ export const createPostBodySchema = z.object({
     .min(5, 'Title must be at least 5 characters')
     .max(255, 'Title must not exceed 255 characters'),
 
-  description: z.string('Not a string').optional(),
+  description: z
+    .string('Not a string')
+    .max(300, 'Description should not exceed 300 characters')
+    .optional(),
 
   content: z.string().optional(),
 
@@ -47,7 +50,10 @@ export const updatePostBodySchema = z.object({
     .max(255, 'Title must not exceed 255 characters')
     .optional(),
 
-  description: z.string('Not a string').optional(),
+  description: z
+    .string('Not a string')
+    .max(300, 'Description should not exceed 300 characters')
+    .optional(),
 
   content: z.string().optional(),
 
