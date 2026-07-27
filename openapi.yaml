@@ -97,7 +97,7 @@ paths:
         - name: search
           in: query
           required: false
-          description: Search text applied to post title and content.
+          description: Search text applied to post title, content, and description.
           schema:
             type: string
         - name: limit
@@ -143,6 +143,7 @@ paths:
               $ref: '#/components/schemas/CreatePostRequest'
             example:
               title: My first post
+              description: Short summary of the post.
               content: This is the body of the post.
               state: DRAFT
       responses:
@@ -206,6 +207,7 @@ paths:
               $ref: '#/components/schemas/UpdatePostRequest'
             example:
               title: Updated post title
+              description: Updated short summary.
               content: Updated content
               state: PUBLISHED
       responses:
@@ -483,6 +485,10 @@ components:
           minLength: 5
           maxLength: 255
           description: Post title.
+        description:
+          type: string
+          maxLength: 300
+          description: Optional post description.
         content:
           type: string
           description: Optional post content.
@@ -499,6 +505,10 @@ components:
           minLength: 5
           maxLength: 255
           description: Updated post title.
+        description:
+          type: string
+          maxLength: 300
+          description: Updated post description.
         content:
           type: string
           description: Updated post content.
@@ -558,6 +568,10 @@ components:
           type: string
           nullable: true
           description: Optional post content.
+        description:
+          type: string
+          nullable: true
+          description: Optional post description.
         createdAt:
           type: string
           format: date-time
