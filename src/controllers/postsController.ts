@@ -80,6 +80,14 @@ export async function createPost(
 ) {
   const { title, content, state, description } = req.body;
 
+  if (state !== 'DRAFT' && state !== undefined) {
+    if (!content) {
+      throw new HttpError(400, 'Specify content for publishing posts');
+    } else if (!description || description === '') {
+      throw new HttpError(400, 'Specify description for publishing posts');
+    }
+  }
+
   const userId = req.user!.id;
 
   const post = await prisma.post.create({
