@@ -99,7 +99,7 @@ export async function updatePost(
   req: AuthenticatedRequest<PostParams, unknown, UpdatePostBody>,
   res: Response,
 ) {
-  const { title, content, state } = req.body;
+  const { title, content, state, description } = req.body;
   const { postId } = req.params;
 
   const updatedPost = await prisma.post.update({
@@ -110,6 +110,7 @@ export async function updatePost(
       title,
       content,
       state,
+      description,
     },
   });
 
