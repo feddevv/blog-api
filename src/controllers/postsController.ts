@@ -78,7 +78,7 @@ export async function createPost(
   req: AuthenticatedRequest<unknown, unknown, CreatePostBody>,
   res: Response,
 ) {
-  const { title, content, state } = req.body;
+  const { title, content, state, description } = req.body;
 
   const userId = req.user!.id;
 
@@ -88,6 +88,7 @@ export async function createPost(
       content,
       state,
       userId,
+      description,
     },
   });
 
