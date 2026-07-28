@@ -83,9 +83,9 @@ export async function createPost(
 
   if (state !== 'DRAFT' && state !== undefined) {
     if (!content) {
-      throw new HttpError(400, 'Specify content for publishing posts');
-    } else if (!description || description === '') {
-      throw new HttpError(400, 'Specify description for publishing posts');
+      throw new HttpError(400, 'Content is required for publishing posts');
+    } else if (!description) {
+      throw new HttpError(400, 'Description is required for publishing posts');
     }
   }
 
@@ -124,11 +124,11 @@ export async function updatePost(
       const finalDescription = description ?? post?.description;
 
       if (!finalContent) {
-        throw new HttpError(422, 'Content is required for published posts');
+        throw new HttpError(422, 'Content is required for publishing posts');
       }
 
       if (!finalDescription) {
-        throw new HttpError(422, 'Description is required for published posts');
+        throw new HttpError(422, 'Description is required for publishing posts');
       }
     }
 

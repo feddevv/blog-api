@@ -39,7 +39,7 @@ export const createPostBodySchema = z.object({
     .max(300, 'Description should not exceed 300 characters')
     .optional(),
 
-  content: z.string().optional(),
+  content: z.string().trim().optional(),
 
   state: z.enum(['PUBLISHED', 'HIDDEN', 'DRAFT']).optional(),
 });
