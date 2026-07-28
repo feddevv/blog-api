@@ -113,6 +113,25 @@ export async function updatePost(
     const { title, content, state, description } = req.body;
     const { postId } = req.params;
 
+    const post = await prisma.post.findUnique({
+      where: {
+        id: Number(postId),
+      },
+    });
+
+    if (state !== 'DRAFT' && state !== undefined) {
+      const finalContent = content ?? post?.content;
+      const finalDescription = description ?? post?.description;
+
+      if (!finalContent) {
+        throw new HttpError(422, 'Content is required for published posts');
+      }
+
+      if (!finalDescription) {
+        throw new HttpError(422, 'Description is required for published posts');
+      }
+    }
+
     const updatedPost = await prisma.post.update({
       where: {
         id: Number(postId),

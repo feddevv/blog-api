@@ -49,16 +49,18 @@ export type CreatePostBody = z.infer<typeof createPostBodySchema>;
 export const updatePostBodySchema = z.object({
   title: z
     .string('Not a string')
+    .trim()
     .min(5, 'Title must be at least 5 characters')
     .max(255, 'Title must not exceed 255 characters')
     .optional(),
 
   description: z
     .string('Not a string')
+    .trim()
     .max(300, 'Description should not exceed 300 characters')
     .optional(),
 
-  content: z.string().optional(),
+  content: z.string().trim().optional(),
 
   state: z.enum(['PUBLISHED', 'HIDDEN', 'DRAFT']).optional(),
 });
