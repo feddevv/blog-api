@@ -81,6 +81,14 @@ export async function createPost(
 ) {
   const { title, content, state, description } = req.body;
 
+  if (state !== 'DRAFT' && state !== undefined) {
+    if (!content) {
+      throw new HttpError(400, 'Content is required for publishing posts');
+    } else if (!description) {
+      throw new HttpError(400, 'Description is required for publishing posts');
+    }
+  }
+
   const userId = req.user!.id;
 
   const post = await prisma.post.create({
@@ -104,6 +112,25 @@ export async function updatePost(
   try {
     const { title, content, state, description } = req.body;
     const { postId } = req.params;
+
+    const post = await prisma.post.findUnique({
+      where: {
+        id: Number(postId),
+      },
+    });
+
+    if (state !== 'DRAFT' && state !== undefined) {
+      const finalContent = content ?? post?.content;
+      const finalDescription = description ?? post?.description;
+
+      if (!finalContent) {
+        throw new HttpError(422, 'Content is required for publishing posts');
+      }
+
+      if (!finalDescription) {
+        throw new HttpError(422, 'Description is required for publishing posts');
+      }
+    }
 
     const updatedPost = await prisma.post.update({
       where: {

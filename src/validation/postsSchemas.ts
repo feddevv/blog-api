@@ -24,19 +24,22 @@ export const postParamsSchema = createIdParamsSchema('postId');
 export type PostParams = z.infer<typeof postParamsSchema>;
 
 export const createPostBodySchema = z.object({
-  title: z
-    .string({
-      error: (issue) => (issue.input === undefined ? 'Title is required' : 'Not a string'),
-    })
-    .min(5, 'Title must be at least 5 characters')
-    .max(255, 'Title must not exceed 255 characters'),
+  title: z.preprocess(
+    (val) => (typeof val === 'string' && val.trim() === '' ? undefined : val),
+    z
+      .string('Not a string')
+      .min(5, 'Title must be at least 5 characters')
+      .max(255, 'Title most not exceed 255 characters')
+      .default('Untitled'),
+  ),
 
   description: z
     .string('Not a string')
+    .trim()
     .max(300, 'Description should not exceed 300 characters')
     .optional(),
 
-  content: z.string().optional(),
+  content: z.string().trim().optional(),
 
   state: z.enum(['PUBLISHED', 'HIDDEN', 'DRAFT']).optional(),
 });
@@ -46,16 +49,18 @@ export type CreatePostBody = z.infer<typeof createPostBodySchema>;
 export const updatePostBodySchema = z.object({
   title: z
     .string('Not a string')
+    .trim()
     .min(5, 'Title must be at least 5 characters')
     .max(255, 'Title must not exceed 255 characters')
     .optional(),
 
   description: z
     .string('Not a string')
+    .trim()
     .max(300, 'Description should not exceed 300 characters')
     .optional(),
 
-  content: z.string().optional(),
+  content: z.string().trim().optional(),
 
   state: z.enum(['PUBLISHED', 'HIDDEN', 'DRAFT']).optional(),
 });
