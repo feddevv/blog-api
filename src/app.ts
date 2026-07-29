@@ -6,6 +6,7 @@ import { router as commentsRouter } from './routes/comments.js';
 import { errorHandler } from './middleware/error.js';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
+import cors from 'cors';
 
 const app = express();
 
@@ -24,6 +25,9 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 // SWAGGER UI
 const swaggerJSON = YAML.load('openapi.yaml');
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerJSON));
+
+// CORS
+app.use(cors());
 
 app.use('/api/auth', authRouter);
 app.use('/api/posts', postsRouter);
