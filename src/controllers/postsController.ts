@@ -41,7 +41,7 @@ export async function getPosts(
     },
   });
 
-  res.json({ posts });
+  res.json(posts);
 }
 
 export async function getPostById(req: AuthenticatedRequest<PostParams>, res: Response) {
