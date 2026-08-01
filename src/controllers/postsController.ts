@@ -72,7 +72,7 @@ export async function getPostById(req: AuthenticatedRequest<PostParams>, res: Re
     throw new HttpError(403, 'Forbidden: Admin access required');
   }
 
-  res.json({ post });
+  res.json(post);
 }
 
 export async function createPost(
