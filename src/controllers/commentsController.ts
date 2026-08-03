@@ -115,6 +115,13 @@ export async function getPostComments(req: AuthenticatedRequest<PostParams>, res
     where: {
       postId: Number(postId),
     },
+    include: {
+      user: {
+        select: {
+          username: true,
+        },
+      },
+    },
   });
 
   res.json(comments);
