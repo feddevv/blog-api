@@ -32,7 +32,7 @@ export async function register(
     },
   });
 
-  res.sendStatus(201);
+  res.status(201).json({ message: 'Created' });
 }
 
 export async function login(req: AuthenticatedRequest<unknown, unknown, LoginBody>, res: Response) {
