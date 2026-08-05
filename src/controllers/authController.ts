@@ -71,6 +71,12 @@ export async function getUser(req: AuthenticatedRequest, res: Response) {
     where: {
       id,
     },
+    select: {
+      username: true,
+      role: true,
+      id: true,
+      email: true,
+    },
   });
 
   if (!user) throw new HttpError(404, 'User not found');
