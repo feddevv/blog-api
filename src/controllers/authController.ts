@@ -63,3 +63,17 @@ export async function login(req: AuthenticatedRequest<unknown, unknown, LoginBod
 
   res.json({ token });
 }
+
+export async function getUser(req: AuthenticatedRequest, res: Response) {
+  const { id } = req.user!;
+
+  const user = await prisma.user.findUnique({
+    where: {
+      id,
+    },
+  });
+
+  if (!user) throw new HttpError(404, 'User not found');
+
+  res.json(user);
+}
