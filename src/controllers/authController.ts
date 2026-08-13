@@ -67,7 +67,7 @@ export async function login(req: AuthenticatedRequest<unknown, unknown, LoginBod
     sameSite: 'lax',
   });
 
-  res.json({ accessToken });
+  res.json({ token: accessToken });
 }
 
 export async function getUser(req: AuthenticatedRequest, res: Response) {
