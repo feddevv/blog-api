@@ -7,6 +7,7 @@ import { errorHandler } from './middleware/error.js';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 
 const app = express();
 
@@ -28,6 +29,9 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerJSON));
 
 // CORS
 app.use(cors());
+
+// COOKIE PARSER
+app.use(cookieParser());
 
 app.use('/api/auth', authRouter);
 app.use('/api/posts', postsRouter);

@@ -59,9 +59,15 @@ export async function login(req: AuthenticatedRequest<unknown, unknown, LoginBod
     throw new HttpError(401, 'Username or password is incorrect');
   }
 
-  const token = jwt.sign({ id: user.id, role: user.role }, secretKey, { expiresIn: '1d' });
+  const accessToken = jwt.sign({ id: user.id, role: user.role }, secretKey, { expiresIn: '15m' });
+  const refreshToken = jwt.sign({ id: user.id }, secretKey, { expiresIn: '10d' });
+  res.cookie('refreshToken', refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+  });
 
-  res.json({ token });
+  res.json({ accessToken });
 }
 
 export async function getUser(req: AuthenticatedRequest, res: Response) {
