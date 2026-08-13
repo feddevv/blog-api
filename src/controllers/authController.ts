@@ -67,6 +67,15 @@ export async function login(req: AuthenticatedRequest<unknown, unknown, LoginBod
     sameSite: 'lax',
   });
 
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  await prisma.refreshToken.create({
+    data: {
+      token: refreshToken,
+      userId: user.id,
+      expiresAt,
+    },
+  });
+
   res.json({ token: accessToken });
 }
 
