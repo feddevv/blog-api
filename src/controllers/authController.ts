@@ -146,3 +146,21 @@ export async function refresh(req: Request, res: Response) {
 
   res.json({ token: newAccessToken });
 }
+
+export async function logout(req: Request, res: Response) {
+  const refreshToken = req.cookies.refreshToken;
+
+  res.clearCookie('refreshToken', {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+  });
+
+  await prisma.refreshToken.delete({
+    where: {
+      token: refreshToken,
+    },
+  });
+
+  res.json({ message: 'Successfully logged out' });
+}
