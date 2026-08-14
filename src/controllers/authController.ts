@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { prisma } from '../db/prisma.js';
 import { hash, compare } from 'bcrypt';
 import { HttpError } from '../errors/HttpError.js';
@@ -97,4 +97,52 @@ export async function getUser(req: AuthenticatedRequest, res: Response) {
   if (!user) throw new HttpError(404, 'User not found');
 
   res.json(user);
+}
+
+export async function refresh(req: Request, res: Response) {
+  const refreshToken = req.cookies.refreshToken;
+
+  if (!refreshToken) throw new HttpError(401, 'Refresh token is missing');
+
+  const secretKey = process.env.SECRET_KEY;
+  if (!secretKey) throw new Error('SECRET_KEY is not defined in environment variables');
+
+  try {
+    jwt.verify(refreshToken, secretKey);
+  } catch {
+    throw new HttpError(401, 'Invalid or expired token');
+  }
+
+  const dbToken = await prisma.refreshToken.findUnique({
+    where: {
+      token: refreshToken,
+    },
+    include: {
+      user: {
+        select: {
+          role: true,
+        },
+      },
+    },
+  });
+
+  if (!dbToken) throw new HttpError(401, 'Invalid or counterfeit token');
+
+  const newAccessToken = jwt.sign({ id: dbToken.userId, role: dbToken.user.role }, secretKey);
+  const newRefreshToken = jwt.sign({ id: dbToken.userId }, secretKey);
+  await prisma.refreshToken.update({
+    where: {
+      id: dbToken.id,
+    },
+    data: {
+      token: newRefreshToken,
+    },
+  });
+  res.cookie('refreshToken', newRefreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+  });
+
+  res.json({ token: newAccessToken });
 }
