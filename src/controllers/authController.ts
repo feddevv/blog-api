@@ -5,6 +5,7 @@ import { HttpError } from '../errors/HttpError.js';
 import { LoginBody, RegisterBody } from '../validation/authSchemas.js';
 import jwt from 'jsonwebtoken';
 import { AuthenticatedRequest } from '../types/types.js';
+import { deleteRefreshToken, setRefreshToken } from '../utils/cookies.js';
 
 export async function register(
   req: AuthenticatedRequest<unknown, unknown, RegisterBody>,
@@ -61,11 +62,7 @@ export async function login(req: AuthenticatedRequest<unknown, unknown, LoginBod
 
   const accessToken = jwt.sign({ id: user.id, role: user.role }, secretKey, { expiresIn: '15m' });
   const refreshToken = jwt.sign({ id: user.id }, secretKey, { expiresIn: '10d' });
-  res.cookie('refreshToken', refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-  });
+  setRefreshToken(res, refreshToken);
 
   const expiresAt = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000);
   await prisma.refreshToken.create({
@@ -110,6 +107,7 @@ export async function refresh(req: Request, res: Response) {
   try {
     jwt.verify(refreshToken, secretKey);
   } catch {
+    deleteRefreshToken(res);
     throw new HttpError(401, 'Invalid or expired token');
   }
 
@@ -138,11 +136,7 @@ export async function refresh(req: Request, res: Response) {
       token: newRefreshToken,
     },
   });
-  res.cookie('refreshToken', newRefreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-  });
+  setRefreshToken(res, refreshToken);
 
   res.json({ token: newAccessToken });
 }
@@ -150,11 +144,7 @@ export async function refresh(req: Request, res: Response) {
 export async function logout(req: Request, res: Response) {
   const refreshToken = req.cookies.refreshToken;
 
-  res.clearCookie('refreshToken', {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-  });
+  deleteRefreshToken(res);
 
   await prisma.refreshToken.delete({
     where: {
