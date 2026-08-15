@@ -126,8 +126,10 @@ export async function refresh(req: Request, res: Response) {
 
   if (!dbToken) throw new HttpError(401, 'Invalid or counterfeit token');
 
-  const newAccessToken = jwt.sign({ id: dbToken.userId, role: dbToken.user.role }, secretKey);
-  const newRefreshToken = jwt.sign({ id: dbToken.userId }, secretKey);
+  const newAccessToken = jwt.sign({ id: dbToken.userId, role: dbToken.user.role }, secretKey, {
+    expiresIn: '15m',
+  });
+  const newRefreshToken = jwt.sign({ id: dbToken.userId }, secretKey, { expiresIn: '10d' });
   await prisma.refreshToken.update({
     where: {
       id: dbToken.id,
@@ -136,7 +138,7 @@ export async function refresh(req: Request, res: Response) {
       token: newRefreshToken,
     },
   });
-  setRefreshToken(res, refreshToken);
+  setRefreshToken(res, newRefreshToken);
 
   res.json({ token: newAccessToken });
 }
