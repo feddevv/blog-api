@@ -124,7 +124,10 @@ export async function refresh(req: Request, res: Response) {
     },
   });
 
-  if (!dbToken) throw new HttpError(401, 'Invalid or counterfeit token');
+  if (!dbToken) {
+    deleteRefreshToken(res);
+    throw new HttpError(401, 'Invalid or counterfeit token');
+  }
 
   const newAccessToken = jwt.sign({ id: dbToken.userId, role: dbToken.user.role }, secretKey, {
     expiresIn: '15m',
