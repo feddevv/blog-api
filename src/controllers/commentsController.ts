@@ -7,7 +7,8 @@ import {
 } from '../validation/commentsSchemas.js';
 import { prisma } from '../db/prisma.js';
 import { HttpError } from '../errors/HttpError.js';
-import { PostParams } from '../validation/postsSchemas.js';
+import { FilterQueryOutput, PostParams } from '../validation/postsSchemas.js';
+import { Prisma } from '../generated/prisma/client.js';
 
 export async function getCommentById(req: AuthenticatedRequest<CommentsParams>, res: Response) {
   const { commentId } = req.params;
@@ -87,8 +88,12 @@ export async function deleteComment(req: AuthenticatedRequest<CommentsParams>, r
   res.sendStatus(204);
 }
 
-export async function getPostComments(req: AuthenticatedRequest<PostParams>, res: Response) {
+export async function getPostComments(
+  req: AuthenticatedRequest<PostParams, unknown, unknown, Omit<FilterQueryOutput, 'state'>>,
+  res: Response,
+) {
   const { postId } = req.params;
+  const { limit, page, search } = req.query;
 
   const post = await prisma.post.findUnique({
     where: {
@@ -111,20 +116,43 @@ export async function getPostComments(req: AuthenticatedRequest<PostParams>, res
     throw new HttpError(403, 'Forbidden: Admin access required');
   }
 
-  const comments = await prisma.comment.findMany({
-    where: {
-      postId: Number(postId),
-    },
-    include: {
-      user: {
-        select: {
-          username: true,
+  const where: Prisma.CommentWhereInput = {};
+  where.postId = Number(postId);
+
+  if (search) {
+    where.content = { contains: search, mode: 'insensitive' };
+  }
+  const skip = ((page ?? 1) - 1) * (limit ?? 10);
+
+  const [comments, commentsCount] = await prisma.$transaction([
+    prisma.comment.findMany({
+      where,
+      skip,
+      take: limit ?? 10,
+      include: {
+        user: {
+          select: {
+            username: true,
+          },
         },
       },
-    },
-  });
+      orderBy: {
+        createdAt: 'desc',
+      },
+    }),
+    prisma.comment.count({
+      where: {
+        postId: Number(postId),
+      },
+    }),
+  ]);
 
-  res.json(comments);
+  res.json({
+    data: comments,
+    totalCount: commentsCount,
+    currentPage: page ?? 1,
+    pageSize: limit ?? 10,
+  });
 }
 
 export async function createComment(
