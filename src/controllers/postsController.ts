@@ -32,16 +32,19 @@ export async function getPosts(
 
   const skip = ((page ?? 1) - 1) * (limit ?? 10);
 
-  const posts = await prisma.post.findMany({
-    where,
-    take: limit ?? 10,
-    skip,
-    orderBy: {
-      createdAt: 'desc',
-    },
-  });
+  const [posts, postsCount] = await prisma.$transaction([
+    prisma.post.findMany({
+      where,
+      take: limit ?? 10,
+      skip,
+      orderBy: {
+        createdAt: 'desc',
+      },
+    }),
+    prisma.post.count(),
+  ]);
 
-  res.json(posts);
+  res.json({ data: posts, totalCount: postsCount, currentPage: page ?? 1, pageSize: limit ?? 10 });
 }
 
 export async function getPostById(req: AuthenticatedRequest<PostParams>, res: Response) {
