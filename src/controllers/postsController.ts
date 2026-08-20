@@ -41,7 +41,7 @@ export async function getPosts(
         createdAt: 'desc',
       },
     }),
-    prisma.post.count(),
+    prisma.post.count({ where }),
   ]);
 
   res.json({ data: posts, totalCount: postsCount, currentPage: page ?? 1, pageSize: limit ?? 10 });
