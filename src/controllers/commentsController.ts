@@ -141,9 +141,7 @@ export async function getPostComments(
       },
     }),
     prisma.comment.count({
-      where: {
-        postId: Number(postId),
-      },
+      where,
     }),
   ]);
 
