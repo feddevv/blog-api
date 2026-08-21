@@ -1,5 +1,5 @@
 import { NextFunction, Response } from 'express';
-import { prisma } from '../db/prisma.js';
+import { prisma } from '../lib/prisma.js';
 import { AuthenticatedRequest } from '../types/types.js';
 import { Prisma } from '../generated/prisma/client.js';
 import {

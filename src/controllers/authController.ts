@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { prisma } from '../db/prisma.js';
+import { prisma } from '../lib/prisma.js';
 import { hash, compare } from 'bcrypt';
 import { HttpError } from '../errors/HttpError.js';
 import { LoginBody, RegisterBody } from '../validation/authSchemas.js';
