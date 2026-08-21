@@ -17,13 +17,17 @@ import {
 import { authenticate, optionalAuthenticate } from '../middleware/authenticate.js';
 import { isAdmin, isEditor } from '../middleware/checkRoles.js';
 import { router as nestedCommentsRouter } from './nestedComments.js';
+import multer from 'multer';
 
 const router = Router();
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
 router.get('/', validator({ query: filterPostsQuerySchema }), optionalAuthenticate, getPosts);
 router.get('/:postId', validator({ params: postParamsSchema }), optionalAuthenticate, getPostById);
 router.post(
   '/',
+  upload.single('postImage'),
   validator({ body: createPostBodySchema, file: imageFileSchema }),
   authenticate,
   isAdmin,

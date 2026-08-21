@@ -10,6 +10,8 @@ import {
 } from '../validation/postsSchemas.js';
 import { HttpError } from '../errors/HttpError.js';
 import { PrismaClientKnownRequestError } from '../generated/prisma/internal/prismaNamespace.js';
+import { s3 } from '../lib/s3.js';
+import { PutObjectCommand } from '@aws-sdk/client-s3';
 
 export async function getPosts(
   req: AuthenticatedRequest<unknown, unknown, unknown, FilterQueryOutput>,
@@ -75,7 +77,9 @@ export async function getPostById(req: AuthenticatedRequest<PostParams>, res: Re
     throw new HttpError(403, 'Forbidden: Admin access required');
   }
 
-  res.json(post);
+  const imageUrl = `${process.env.R2_PUBLIC_URL}/${post.imageKey}`;
+
+  res.json({ ...post, imageUrl });
 }
 
 export async function createPost(
@@ -92,6 +96,17 @@ export async function createPost(
     }
   }
 
+  if (!req.file) throw new HttpError(400, "File wasn't sent");
+
+  const key = `posts/${crypto.randomUUID()}-${req.file.originalname}`;
+  s3.send(
+    new PutObjectCommand({
+      Bucket: 'blog-api-bucket',
+      Key: key,
+      Body: req.file.buffer,
+    }),
+  );
+
   const userId = req.user!.id;
 
   const post = await prisma.post.create({
@@ -101,6 +116,7 @@ export async function createPost(
       state,
       userId,
       description,
+      imageKey: key,
     },
   });
 
