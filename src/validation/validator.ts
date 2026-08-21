@@ -5,6 +5,8 @@ interface RequestSchemas {
   body?: ZodType<any, any, any>;
   query?: ZodType<any, any, any>;
   params?: ZodType<any, any, any>;
+  files?: ZodType<any, any, any>;
+  file?: ZodType<any, any, any>;
 }
 
 export function validator(schemas: RequestSchemas) {
@@ -18,6 +20,12 @@ export function validator(schemas: RequestSchemas) {
       }
       if (schemas.query) {
         req.query = schemas.query.parse(req.query);
+      }
+      if (schemas.files) {
+        req.files = schemas.files.parse(req.files);
+      }
+      if (schemas.file) {
+        req.file = schemas.file.parse(req.file);
       }
 
       next();

@@ -66,3 +66,16 @@ export const updatePostBodySchema = z.object({
 });
 
 export type UpdatePostBody = z.infer<typeof updatePostBodySchema>;
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
+export const imageFileSchema = z.object({
+  fieldname: z.string(),
+  originalname: z.string(),
+  encoding: z.string(),
+  mimetype: z.enum(ACCEPTED_IMAGE_TYPES, 'Only JPEG, PNG and WEBP are supported'),
+  size: z.number().max(MAX_FILE_SIZE, 'File size must not exceed 5 MB'),
+  buffer: z.instanceof(Buffer, {
+    error: 'File must be stored in memory',
+  }),
+});

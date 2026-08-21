@@ -10,6 +10,7 @@ import { validator } from '../validation/validator.js';
 import {
   createPostBodySchema,
   filterPostsQuerySchema,
+  imageFileSchema,
   postParamsSchema,
   updatePostBodySchema,
 } from '../validation/postsSchemas.js';
@@ -21,7 +22,13 @@ const router = Router();
 
 router.get('/', validator({ query: filterPostsQuerySchema }), optionalAuthenticate, getPosts);
 router.get('/:postId', validator({ params: postParamsSchema }), optionalAuthenticate, getPostById);
-router.post('/', validator({ body: createPostBodySchema }), authenticate, isAdmin, createPost);
+router.post(
+  '/',
+  validator({ body: createPostBodySchema, file: imageFileSchema }),
+  authenticate,
+  isAdmin,
+  createPost,
+);
 router.put(
   '/:postId',
   validator({ body: updatePostBodySchema, params: postParamsSchema }),
