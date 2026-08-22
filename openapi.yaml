@@ -8,13 +8,15 @@ info:
 servers:
   - url: http://localhost:3000
     description: Local development server
+  - url: https://blog-api-65st.onrender.com
+    description: Production server
 tags:
   - name: Auth
-    description: Authentication and account creation endpoints
+    description: Authentication, session management, and account creation endpoints
   - name: Posts
     description: Blog post listing and management endpoints
   - name: Comments
-    description: Comment management endpoints
+    description: Comment management and retrieval endpoints
 paths:
   /api/auth/register:
     post:
@@ -22,7 +24,7 @@ paths:
       summary: Register a new user
       description: >-
         Creates a new account with a unique username and email address. The
-        password is validated, hashed, and stored securely.
+        password is validated, hashed with bcrypt, and stored securely.
       requestBody:
         required: true
         content:
@@ -35,7 +37,13 @@ paths:
               password: secret123
       responses:
         '201':
-          description: User registered successfully. No response body is returned.
+          description: User registered successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+              example:
+                message: Created
         '409':
           $ref: '#/components/responses/ConflictResponse'
         '422':
@@ -46,10 +54,10 @@ paths:
   /api/auth/login:
     post:
       tags: [Auth]
-      summary: Log in and receive a JWT
+      summary: Log in and receive JWT credentials
       description: >-
-        Verifies the username and password, then returns a signed JWT token
-        that should be sent in the Authorization header using the Bearer scheme.
+        Verifies user credentials, returns an access token in the response body,
+        and sets an HttpOnly refresh token cookie.
       requestBody:
         required: true
         content:
@@ -61,7 +69,12 @@ paths:
               password: secret123
       responses:
         '200':
-          description: Authentication succeeded and a token is returned.
+          description: Authentication succeeded. Returns access token and sets refresh token cookie.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+              description: Sets the HttpOnly refreshToken cookie.
           content:
             application/json:
               schema:
@@ -75,13 +88,101 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerErrorResponse'
 
+  /api/auth/me:
+    get:
+      tags: [Auth]
+      summary: Get current authenticated user
+      description: >-
+        Returns profile details of the currently authenticated user based on the
+        provided Bearer JWT token.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User profile retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+
+  /api/auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh access token
+      description: >-
+        Generates a new access token and rotates the refresh token using the
+        HttpOnly `refreshToken` cookie.
+      parameters:
+        - name: refreshToken
+          in: cookie
+          required: true
+          description: HttpOnly refresh token cookie.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Access token refreshed successfully.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+              description: Rotates the HttpOnly refreshToken cookie.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+              example:
+                token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+
+  /api/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Log out user
+      description: >-
+        Invalidates the active refresh token in the database and clears the
+        HttpOnly `refreshToken` cookie.
+      parameters:
+        - name: refreshToken
+          in: cookie
+          required: false
+          description: HttpOnly refresh token cookie to invalidate.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Logged out successfully.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+              description: Clears the refreshToken cookie.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+              example:
+                message: Successfully logged out
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+
   /api/posts:
     get:
       tags: [Posts]
       summary: List posts
       description: >-
-        Returns posts ordered by newest first. Anonymous users receive only
-        published posts. Authenticated admin users can filter by state.
+        Returns paginated posts ordered by creation date descending. Anonymous
+        and non-admin users only receive PUBLISHED posts. Authenticated admin
+        users can filter by post state.
       security:
         - {}
         - bearerAuth: []
@@ -91,13 +192,13 @@ paths:
           required: false
           description: >-
             Optional post state filter. Non-admin users are always limited to
-            published posts even if another state is provided.
+            PUBLISHED posts even if another state is provided.
           schema:
             $ref: '#/components/schemas/PostState'
         - name: search
           in: query
           required: false
-          description: Search text applied to post title, content, and description.
+          description: Search text applied to post title, content, and description (case-insensitive).
           schema:
             type: string
         - name: limit
@@ -123,6 +224,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PostsListResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
         '422':
           $ref: '#/components/responses/ValidationErrorResponse'
         '500':
@@ -131,21 +234,17 @@ paths:
       tags: [Posts]
       summary: Create a new post
       description: >-
-        Creates a post for the authenticated user. This endpoint is restricted
-        to users with the ADMIN role.
+        Creates a new post with a cover image file upload. Content and description
+        are required if state is PUBLISHED or HIDDEN. Restricted to users with the
+        ADMIN role.
       security:
         - bearerAuth: []
       requestBody:
         required: true
         content:
-          application/json:
+          multipart/form-data:
             schema:
               $ref: '#/components/schemas/CreatePostRequest'
-            example:
-              title: My first post
-              description: Short summary of the post.
-              content: This is the body of the post.
-              state: DRAFT
       responses:
         '201':
           description: Post created successfully.
@@ -153,6 +252,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Post'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
         '401':
           $ref: '#/components/responses/UnauthorizedResponse'
         '403':
@@ -167,8 +268,8 @@ paths:
       tags: [Posts]
       summary: Get a post by id
       description: >-
-        Returns a single post with its latest comments. Public requests can
-        read published posts. Hidden or draft posts require an ADMIN token.
+        Returns a single post with its latest 10 comments. Public requests can
+        read PUBLISHED posts. DRAFT or HIDDEN posts require an ADMIN token.
       security:
         - {}
         - bearerAuth: []
@@ -176,11 +277,13 @@ paths:
         - $ref: '#/components/parameters/PostId'
       responses:
         '200':
-          description: The requested post and its comments.
+          description: The requested post and its latest comments.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/PostWithCommentsResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
         '403':
           $ref: '#/components/responses/ForbiddenResponse'
         '404':
@@ -193,8 +296,9 @@ paths:
       tags: [Posts]
       summary: Update a post
       description: >-
-        Updates the provided post fields. This endpoint is restricted to users
-        with the ADMIN or EDITOR role.
+        Updates post fields. If updating to PUBLISHED or HIDDEN (or updating an
+        already published/hidden post), content and description must not be empty.
+        Restricted to users with the ADMIN or EDITOR role.
       security:
         - bearerAuth: []
       parameters:
@@ -231,8 +335,7 @@ paths:
       tags: [Posts]
       summary: Delete a post
       description: >-
-        Deletes a post by id. This endpoint is restricted to users with the
-        ADMIN role.
+        Deletes a post by id. Restricted to users with the ADMIN role.
       security:
         - bearerAuth: []
       parameters:
@@ -256,21 +359,45 @@ paths:
       tags: [Comments]
       summary: List comments for a post
       description: >-
-        Returns all comments for the selected post. Public requests can read
-        comments only for published posts. Draft or hidden posts require an
-        ADMIN token.
+        Returns a paginated list of comments for the specified post. Public
+        requests can read comments only for PUBLISHED posts. DRAFT or HIDDEN
+        posts require an ADMIN token.
       security:
         - {}
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/PostId'
+        - name: search
+          in: query
+          required: false
+          description: Search text applied to comment content (case-insensitive).
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          description: Number of comments to return per page. Defaults to 10.
+          schema:
+            type: integer
+            minimum: 1
+            default: 10
+        - name: page
+          in: query
+          required: false
+          description: Page number for pagination. Defaults to 1.
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
       responses:
         '200':
-          description: A list of comments for the post.
+          description: A paginated list of comments for the post.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/CommentsListResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
         '403':
           $ref: '#/components/responses/ForbiddenResponse'
         '404':
@@ -283,7 +410,7 @@ paths:
       tags: [Comments]
       summary: Create a comment for a post
       description: >-
-        Creates a comment for the selected post. Authentication is required.
+        Creates a new comment for the specified post. Authentication is required.
       security:
         - bearerAuth: []
       parameters:
@@ -318,7 +445,7 @@ paths:
       summary: Get a comment by id
       description: >-
         Returns a single comment if the parent post is published. Comments on
-        hidden or draft posts are not exposed by this endpoint.
+        hidden or draft posts are not accessible via this endpoint.
       parameters:
         - $ref: '#/components/parameters/CommentId'
       responses:
@@ -338,7 +465,7 @@ paths:
       tags: [Comments]
       summary: Update a comment
       description: >-
-        Updates the comment content. The caller must be the comment owner or an
+        Updates comment text. Restricted to the author of the comment or an
         ADMIN user.
       security:
         - bearerAuth: []
@@ -373,8 +500,8 @@ paths:
       tags: [Comments]
       summary: Delete a comment
       description: >-
-        Deletes a comment. The caller must be the comment owner or an ADMIN
-        user.
+        Deletes a comment by id. Restricted to the author of the comment or an
+        ADMIN user.
       security:
         - bearerAuth: []
       parameters:
@@ -400,8 +527,8 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: >-
-        Provide the JWT returned by the login endpoint in the Authorization
-        header as `Bearer <token>`.
+        Provide the JWT returned by the login or refresh endpoints in the
+        Authorization header as `Bearer <token>`.
 
   parameters:
     PostId:
@@ -474,28 +601,41 @@ components:
       properties:
         token:
           type: string
-          description: JWT that should be sent in the Authorization header.
-    CreatePostRequest:
+          description: Signed JWT access token that should be sent in the Authorization header.
+    MessageResponse:
       type: object
       additionalProperties: false
-      required: [title]
+      required: [message]
+      properties:
+        message:
+          type: string
+          description: Status message returned by the operation.
+    CreatePostRequest:
+      type: object
+      required: [postImage]
       properties:
         title:
           type: string
           minLength: 5
           maxLength: 255
-          description: Post title.
+          default: Untitled
+          description: Post title. Defaults to "Untitled" if empty or omitted.
         description:
           type: string
           maxLength: 300
-          description: Optional post description.
+          description: Post summary. Required when publishing the post.
         content:
           type: string
-          description: Optional post content.
+          description: Post body content. Required when publishing the post.
         state:
           allOf:
             - $ref: '#/components/schemas/PostState'
-          description: Optional state for the new post. Defaults to DRAFT.
+          default: DRAFT
+          description: Post publication state. Defaults to DRAFT.
+        postImage:
+          type: string
+          format: binary
+          description: Post cover image file (JPEG, PNG, or WEBP, max 5 MB).
     UpdatePostRequest:
       type: object
       additionalProperties: false
@@ -508,10 +648,10 @@ components:
         description:
           type: string
           maxLength: 300
-          description: Updated post description.
+          description: Updated post summary. Required when publishing.
         content:
           type: string
-          description: Updated post content.
+          description: Updated post content. Required when publishing.
         state:
           allOf:
             - $ref: '#/components/schemas/PostState'
@@ -572,6 +712,14 @@ components:
           type: string
           nullable: true
           description: Optional post description.
+        imageKey:
+          type: string
+          nullable: true
+          description: Object key of the post image stored in cloud storage.
+        imageUrl:
+          type: string
+          nullable: true
+          description: Public URL to access the post cover image.
         createdAt:
           type: string
           format: date-time
@@ -586,26 +734,16 @@ components:
           description: Identifier of the authoring user.
         state:
           $ref: '#/components/schemas/PostState'
-        comments:
-          type: array
-          description: Comments are included only in the single post response.
-          items:
-            $ref: '#/components/schemas/Comment'
     PostWithCommentsResponse:
-      type: object
-      additionalProperties: false
-      required: [post]
-      properties:
-        post:
-          allOf:
-            - $ref: '#/components/schemas/Post'
-            - type: object
-              properties:
-                comments:
-                  type: array
-                  description: Latest comments attached to the post.
-                  items:
-                    $ref: '#/components/schemas/Comment'
+      allOf:
+        - $ref: '#/components/schemas/Post'
+        - type: object
+          properties:
+            comments:
+              type: array
+              description: Latest comments attached to the post (up to 10).
+              items:
+                $ref: '#/components/schemas/Comment'
     Comment:
       type: object
       additionalProperties: false
@@ -634,19 +772,58 @@ components:
           type: integer
           format: int32
           description: Identifier of the parent post.
+    CommentUser:
+      type: object
+      additionalProperties: false
+      required: [username]
+      properties:
+        username:
+          type: string
+          description: Username of the comment author.
+    CommentWithUser:
+      allOf:
+        - $ref: '#/components/schemas/Comment'
+        - type: object
+          required: [user]
+          properties:
+            user:
+              $ref: '#/components/schemas/CommentUser'
     PostsListResponse:
       type: object
       additionalProperties: false
-      required: [posts]
+      required: [data, totalCount, currentPage, pageSize]
       properties:
-        posts:
+        data:
           type: array
           items:
             $ref: '#/components/schemas/Post'
+        totalCount:
+          type: integer
+          description: Total number of posts matching the filter criteria.
+        currentPage:
+          type: integer
+          description: Current page number.
+        pageSize:
+          type: integer
+          description: Number of posts per page.
     CommentsListResponse:
-      type: array
-      items:
-        $ref: '#/components/schemas/Comment'
+      type: object
+      additionalProperties: false
+      required: [data, totalCount, currentPage, pageSize]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommentWithUser'
+        totalCount:
+          type: integer
+          description: Total number of comments for the post.
+        currentPage:
+          type: integer
+          description: Current page number.
+        pageSize:
+          type: integer
+          description: Number of comments per page.
     ErrorDetail:
       type: object
       additionalProperties: false
@@ -673,8 +850,16 @@ components:
             $ref: '#/components/schemas/ErrorDetail'
 
   responses:
+    BadRequestResponse:
+      description: The request parameters or payload are invalid or missing required data.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: File wasn't sent
     UnauthorizedResponse:
-      description: Authentication failed or the JWT token is missing or invalid.
+      description: Authentication failed or token is missing, invalid, or expired.
       content:
         application/json:
           schema:
@@ -682,7 +867,7 @@ components:
           example:
             message: Invalid or expired token
     ForbiddenResponse:
-      description: The authenticated user is not allowed to access this resource.
+      description: The authenticated user is not authorized to access or modify this resource.
       content:
         application/json:
           schema:
@@ -706,7 +891,7 @@ components:
           example:
             message: Username or email is already taken
     ValidationErrorResponse:
-      description: The request payload failed validation.
+      description: The request parameters, query, body, or file failed validation.
       content:
         application/json:
           schema:
@@ -714,7 +899,7 @@ components:
           example:
             message: Validation failed
             errors:
-              - message: Must be at least 5 characters
+              - message: Title must be at least 5 characters
                 path: title
     InternalServerErrorResponse:
       description: An unexpected server error occurred.
