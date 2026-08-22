@@ -1,8 +1,8 @@
 import express, { NextFunction, Request, Response } from 'express';
 import 'dotenv/config';
-import { router as authRouter } from './routes/auth.js';
-import { router as postsRouter } from './routes/posts.js';
-import { router as commentsRouter } from './routes/comments.js';
+import { router as authRouter } from './routes/auth.route.js';
+import { router as postsRouter } from './routes/posts.route.js';
+import { router as commentsRouter } from './routes/comments.route.js';
 import { errorHandler } from './middleware/error.js';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';

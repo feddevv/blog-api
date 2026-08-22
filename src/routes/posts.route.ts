@@ -5,7 +5,7 @@ import {
   createPost,
   updatePost,
   deletePost,
-} from '../controllers/postsController.js';
+} from '../controllers/posts.controller.js';
 import { validator } from '../validation/validator.js';
 import {
   createPostBodySchema,
@@ -16,7 +16,7 @@ import {
 } from '../validation/postsSchemas.js';
 import { authenticate, optionalAuthenticate } from '../middleware/authenticate.js';
 import { isAdmin, isEditor } from '../middleware/checkRoles.js';
-import { router as nestedCommentsRouter } from './nestedComments.js';
+import { router as nestedCommentsRouter } from './nestedComments.route.js';
 import multer from 'multer';
 
 const router = Router();
