@@ -46,7 +46,17 @@ export async function getPosts(
     prisma.post.count({ where }),
   ]);
 
-  res.json({ data: posts, totalCount: postsCount, currentPage: page ?? 1, pageSize: limit ?? 10 });
+  res.json({
+    data: posts.map((post) => {
+      const imageUrl: string | null = post.imageKey
+        ? `${process.env.R2_PUBLIC_URL}/${post.imageKey}`
+        : null;
+      return { ...post, imageUrl };
+    }),
+    totalCount: postsCount,
+    currentPage: page ?? 1,
+    pageSize: limit ?? 10,
+  });
 }
 
 export async function getPostById(req: AuthenticatedRequest<PostParams>, res: Response) {
@@ -77,7 +87,9 @@ export async function getPostById(req: AuthenticatedRequest<PostParams>, res: Re
     throw new HttpError(403, 'Forbidden: Admin access required');
   }
 
-  const imageUrl = `${process.env.R2_PUBLIC_URL}/${post.imageKey}`;
+  const imageUrl: string | null = post.imageKey
+    ? `${process.env.R2_PUBLIC_URL}/${post.imageKey}`
+    : null;
 
   res.json({ ...post, imageUrl });
 }
