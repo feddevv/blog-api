@@ -11,7 +11,7 @@ import {
 import { HttpError } from '../errors/HttpError.js';
 import { PrismaClientKnownRequestError } from '../generated/prisma/internal/prismaNamespace.js';
 import { s3 } from '../lib/s3.js';
-import { PutObjectCommand } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 
 export async function getPosts(
   req: AuthenticatedRequest<unknown, unknown, unknown, FilterQueryOutput>,
@@ -85,6 +85,7 @@ export async function getPostById(req: AuthenticatedRequest<PostParams>, res: Re
 export async function createPost(
   req: AuthenticatedRequest<unknown, unknown, CreatePostBody>,
   res: Response,
+  next: NextFunction,
 ) {
   const { title, content, state, description } = req.body;
 
@@ -99,7 +100,7 @@ export async function createPost(
   if (!req.file) throw new HttpError(400, "File wasn't sent");
 
   const key = `posts/${crypto.randomUUID()}-${req.file.originalname}`;
-  s3.send(
+  await s3.send(
     new PutObjectCommand({
       Bucket: 'blog-api-bucket',
       Key: key,
@@ -109,18 +110,32 @@ export async function createPost(
 
   const userId = req.user!.id;
 
-  const post = await prisma.post.create({
-    data: {
-      title,
-      content,
-      state,
-      userId,
-      description,
-      imageKey: key,
-    },
-  });
+  try {
+    const post = await prisma.post.create({
+      data: {
+        title,
+        content,
+        state,
+        userId,
+        description,
+        imageKey: key,
+      },
+    });
+    res.status(201).json(post);
+  } catch (err) {
+    try {
+      await s3.send(
+        new DeleteObjectCommand({
+          Bucket: 'blog-api-bucket',
+          Key: key,
+        }),
+      );
+    } catch (deleteError) {
+      console.error('Unable to delete from the bucket', deleteError);
+    }
 
-  res.status(201).json(post);
+    next(err);
+  }
 }
 
 export async function updatePost(
