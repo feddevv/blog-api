@@ -5,7 +5,7 @@ import {
   CreateCommentBody,
   UpdateCommentBody,
 } from '../validation/commentsSchemas.js';
-import { prisma } from '../db/prisma.js';
+import { prisma } from '../lib/prisma.js';
 import { HttpError } from '../errors/HttpError.js';
 import { FilterQueryOutput, PostParams } from '../validation/postsSchemas.js';
 import { Prisma } from '../generated/prisma/client.js';

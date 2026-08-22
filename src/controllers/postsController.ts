@@ -1,5 +1,5 @@
 import { NextFunction, Response } from 'express';
-import { prisma } from '../db/prisma.js';
+import { prisma } from '../lib/prisma.js';
 import { AuthenticatedRequest } from '../types/types.js';
 import { Prisma } from '../generated/prisma/client.js';
 import {
@@ -10,6 +10,8 @@ import {
 } from '../validation/postsSchemas.js';
 import { HttpError } from '../errors/HttpError.js';
 import { PrismaClientKnownRequestError } from '../generated/prisma/internal/prismaNamespace.js';
+import { s3 } from '../lib/s3.js';
+import { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 
 export async function getPosts(
   req: AuthenticatedRequest<unknown, unknown, unknown, FilterQueryOutput>,
@@ -44,7 +46,17 @@ export async function getPosts(
     prisma.post.count({ where }),
   ]);
 
-  res.json({ data: posts, totalCount: postsCount, currentPage: page ?? 1, pageSize: limit ?? 10 });
+  res.json({
+    data: posts.map((post) => {
+      const imageUrl: string | null = post.imageKey
+        ? `${process.env.R2_PUBLIC_URL}/${post.imageKey}`
+        : null;
+      return { ...post, imageUrl };
+    }),
+    totalCount: postsCount,
+    currentPage: page ?? 1,
+    pageSize: limit ?? 10,
+  });
 }
 
 export async function getPostById(req: AuthenticatedRequest<PostParams>, res: Response) {
@@ -75,12 +87,17 @@ export async function getPostById(req: AuthenticatedRequest<PostParams>, res: Re
     throw new HttpError(403, 'Forbidden: Admin access required');
   }
 
-  res.json(post);
+  const imageUrl: string | null = post.imageKey
+    ? `${process.env.R2_PUBLIC_URL}/${post.imageKey}`
+    : null;
+
+  res.json({ ...post, imageUrl });
 }
 
 export async function createPost(
   req: AuthenticatedRequest<unknown, unknown, CreatePostBody>,
   res: Response,
+  next: NextFunction,
 ) {
   const { title, content, state, description } = req.body;
 
@@ -92,19 +109,45 @@ export async function createPost(
     }
   }
 
+  if (!req.file) throw new HttpError(400, "File wasn't sent");
+
+  const key = `posts/${crypto.randomUUID()}-${req.file.originalname}`;
+  await s3.send(
+    new PutObjectCommand({
+      Bucket: 'blog-api-bucket',
+      Key: key,
+      Body: req.file.buffer,
+    }),
+  );
+
   const userId = req.user!.id;
 
-  const post = await prisma.post.create({
-    data: {
-      title,
-      content,
-      state,
-      userId,
-      description,
-    },
-  });
+  try {
+    const post = await prisma.post.create({
+      data: {
+        title,
+        content,
+        state,
+        userId,
+        description,
+        imageKey: key,
+      },
+    });
+    res.status(201).json(post);
+  } catch (err) {
+    try {
+      await s3.send(
+        new DeleteObjectCommand({
+          Bucket: 'blog-api-bucket',
+          Key: key,
+        }),
+      );
+    } catch (deleteError) {
+      console.error('Unable to delete from the bucket', deleteError);
+    }
 
-  res.status(201).json(post);
+    next(err);
+  }
 }
 
 export async function updatePost(

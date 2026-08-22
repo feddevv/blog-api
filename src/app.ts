@@ -8,6 +8,7 @@ import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import 'multer';
 
 const app = express();
 
