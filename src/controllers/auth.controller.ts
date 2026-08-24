@@ -1,13 +1,7 @@
 import { Request, Response } from 'express';
 import { LoginBody, RegisterBody } from '../validation/authSchemas.js';
 import { AuthenticatedRequest } from '../types/types.js';
-import {
-  getUserById,
-  loginUser,
-  logoutUser,
-  refreshAccessToken,
-  registerUser,
-} from '../services/auth.service.js';
+import * as authService from '../services/auth.service.js';
 
 export async function register(
   req: AuthenticatedRequest<unknown, unknown, RegisterBody>,
@@ -15,7 +9,7 @@ export async function register(
 ) {
   const { username, email, password } = req.body;
 
-  await registerUser(username, email, password);
+  await authService.registerUser(username, email, password);
 
   res.status(201).json({ message: 'Created' });
 }
@@ -23,7 +17,7 @@ export async function register(
 export async function login(req: AuthenticatedRequest<unknown, unknown, LoginBody>, res: Response) {
   const { username, password } = req.body;
 
-  const accessToken = await loginUser(username, password, res);
+  const accessToken = await authService.loginUser(username, password, res);
 
   res.json({ token: accessToken });
 }
@@ -31,7 +25,7 @@ export async function login(req: AuthenticatedRequest<unknown, unknown, LoginBod
 export async function me(req: AuthenticatedRequest, res: Response) {
   const { id } = req.user!;
 
-  const user = await getUserById(id);
+  const user = await authService.getUserById(id);
 
   res.json(user);
 }
@@ -39,7 +33,7 @@ export async function me(req: AuthenticatedRequest, res: Response) {
 export async function refresh(req: Request, res: Response) {
   const refreshToken = req.cookies.refreshToken;
 
-  const newAccessToken = await refreshAccessToken(refreshToken, res);
+  const newAccessToken = await authService. refreshAccessToken(refreshToken, res);
 
   res.json({ token: newAccessToken });
 }
@@ -47,7 +41,7 @@ export async function refresh(req: Request, res: Response) {
 export async function logout(req: Request, res: Response) {
   const refreshToken = req.cookies.refreshToken as string;
 
-  await logoutUser(refreshToken, res);
+  await authService.logoutUser(refreshToken, res);
 
   res.json({ message: 'Successfully logged out' });
 }
