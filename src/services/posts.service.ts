@@ -42,9 +42,8 @@ export async function getPosts({ limit, page, search, state, user }: GetPostsPar
   ]);
 
   const postsWithImgUrls = posts.map((post) => {
-    const imageUrl: string | null = post.imageKey
-      ? `${process.env.R2_PUBLIC_URL}/${post.imageKey}`
-      : null;
+    const imageUrl = `${process.env.R2_PUBLIC_URL}/${post.imageKey}`;
+
     return { ...post, imageUrl };
   });
 
@@ -77,9 +76,7 @@ export async function getPostById(postId: number, user?: { id: number; role: Rol
     throw new HttpError(403, 'Forbidden: Admin access required');
   }
 
-  const imageUrl: string | null = post.imageKey
-    ? `${process.env.R2_PUBLIC_URL}/${post.imageKey}`
-    : null;
+  const imageUrl = `${process.env.R2_PUBLIC_URL}/${post.imageKey}`;
 
   return { ...post, imageUrl };
 }
