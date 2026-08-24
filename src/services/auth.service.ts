@@ -1,18 +1,11 @@
-import { Request, Response } from 'express';
-import { prisma } from '../lib/prisma.js';
-import { hash, compare } from 'bcrypt';
+import { compare, hash } from 'bcrypt';
 import { HttpError } from '../errors/HttpError.js';
-import { LoginBody, RegisterBody } from '../validation/authSchemas.js';
+import { prisma } from '../lib/prisma.js';
 import jwt from 'jsonwebtoken';
-import { AuthenticatedRequest } from '../types/types.js';
 import { deleteRefreshToken, setRefreshToken } from '../utils/cookies.js';
+import { Response } from 'express';
 
-export async function register(
-  req: AuthenticatedRequest<unknown, unknown, RegisterBody>,
-  res: Response,
-) {
-  const { username, email, password } = req.body;
-
+export async function registerUser(username: string, email: string, password: string) {
   const existingUser = await prisma.user.findFirst({
     where: {
       OR: [{ username: username }, { email: email }],
@@ -32,13 +25,9 @@ export async function register(
       password: hashedPassword,
     },
   });
-
-  res.status(201).json({ message: 'Created' });
 }
 
-export async function login(req: AuthenticatedRequest<unknown, unknown, LoginBody>, res: Response) {
-  const { username, password } = req.body;
-
+export async function loginUser(username: string, password: string, res: Response) {
   const secretKey = process.env.SECRET_KEY;
   if (!secretKey) {
     throw new Error('SECRET_KEY is not defined in environment variables');
@@ -73,12 +62,10 @@ export async function login(req: AuthenticatedRequest<unknown, unknown, LoginBod
     },
   });
 
-  res.json({ token: accessToken });
+  return accessToken;
 }
 
-export async function getUser(req: AuthenticatedRequest, res: Response) {
-  const { id } = req.user!;
-
+export async function getUserById(id: number) {
   const user = await prisma.user.findUnique({
     where: {
       id,
@@ -93,12 +80,10 @@ export async function getUser(req: AuthenticatedRequest, res: Response) {
 
   if (!user) throw new HttpError(404, 'User not found');
 
-  res.json(user);
+  return user;
 }
 
-export async function refresh(req: Request, res: Response) {
-  const refreshToken = req.cookies.refreshToken;
-
+export async function refreshAccessToken(refreshToken: string, res: Response) {
   if (!refreshToken) throw new HttpError(401, 'Refresh token is missing');
 
   const secretKey = process.env.SECRET_KEY;
@@ -143,15 +128,11 @@ export async function refresh(req: Request, res: Response) {
   });
   setRefreshToken(res, newRefreshToken);
 
-  res.json({ token: newAccessToken });
+  return newAccessToken;
 }
 
-export async function logout(req: Request, res: Response) {
-  const refreshToken = req.cookies.refreshToken;
-
-  if (!refreshToken) {
-    return res.json({ message: 'You are already logged out' });
-  }
+export async function logoutUser(refreshToken: string, res: Response) {
+  if (!refreshToken) return;
 
   deleteRefreshToken(res);
 
@@ -160,6 +141,4 @@ export async function logout(req: Request, res: Response) {
       token: refreshToken,
     },
   });
-
-  res.json({ message: 'Successfully logged out' });
 }

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createComment, getPostComments } from '../controllers/commentsController.js';
+import { createComment, getPostComments } from '../controllers/comments.controller.js';
 import { validator } from '../validation/validator.js';
 import { postParamsSchema } from '../validation/postsSchemas.js';
 import { createCommentBodySchema } from '../validation/commentsSchemas.js';

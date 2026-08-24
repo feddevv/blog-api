@@ -1,21 +1,13 @@
-import { Response } from 'express';
-import { AuthenticatedRequest } from '../types/types.js';
-import {
-  CommentsParams,
-  CreateCommentBody,
-  UpdateCommentBody,
-} from '../validation/commentsSchemas.js';
-import { prisma } from '../lib/prisma.js';
 import { HttpError } from '../errors/HttpError.js';
-import { FilterQueryOutput, PostParams } from '../validation/postsSchemas.js';
 import { Prisma } from '../generated/prisma/client.js';
+import { Role } from '../generated/prisma/enums.js';
+import { prisma } from '../lib/prisma.js';
+import { FilterQueryOutput } from '../validation/postsSchemas.js';
 
-export async function getCommentById(req: AuthenticatedRequest<CommentsParams>, res: Response) {
-  const { commentId } = req.params;
-
+export async function getCommentById({ commentId }: { commentId: number }) {
   const comment = await prisma.comment.findFirst({
     where: {
-      id: Number(commentId),
+      id: commentId,
       post: {
         state: 'PUBLISHED',
       },
@@ -26,16 +18,18 @@ export async function getCommentById(req: AuthenticatedRequest<CommentsParams>, 
     throw new HttpError(404, 'Comment not found');
   }
 
-  res.json(comment);
+  return comment;
 }
 
-export async function updateComment(
-  req: AuthenticatedRequest<CommentsParams, unknown, UpdateCommentBody>,
-  res: Response,
-) {
-  const { commentId } = req.params;
-  const { content } = req.body;
-
+interface UpdateCommentParams {
+  commentId: number;
+  content?: string;
+  user?: {
+    id: number;
+    role: Role;
+  };
+}
+export async function updateComment({ commentId, content, user }: UpdateCommentParams) {
   const existingComment = await prisma.comment.findUnique({
     where: {
       id: Number(commentId),
@@ -46,11 +40,11 @@ export async function updateComment(
     throw new HttpError(404, 'Comment not found');
   }
 
-  if (req.user!.id !== existingComment.userId && req.user!.role !== 'ADMIN') {
+  if (user!.id !== existingComment.userId && user!.role !== 'ADMIN') {
     throw new HttpError(403, "You don't have access to update this comment");
   }
 
-  const updated = await prisma.comment.update({
+  const updatedComment = await prisma.comment.update({
     where: {
       id: Number(commentId),
     },
@@ -59,12 +53,16 @@ export async function updateComment(
     },
   });
 
-  res.json(updated);
+  return updatedComment;
 }
 
-export async function deleteComment(req: AuthenticatedRequest<CommentsParams>, res: Response) {
-  const { commentId } = req.params;
-
+export async function deleteComment({
+  commentId,
+  user,
+}: {
+  commentId: number;
+  user?: { id: number; role: Role };
+}) {
   const existing = await prisma.comment.findUnique({
     where: {
       id: Number(commentId),
@@ -75,7 +73,7 @@ export async function deleteComment(req: AuthenticatedRequest<CommentsParams>, r
     throw new HttpError(404, 'Comment not found');
   }
 
-  if (req.user!.id !== existing.userId && req.user!.role !== 'ADMIN') {
+  if (user!.id !== existing.userId && user!.role !== 'ADMIN') {
     throw new HttpError(403, "You don't have access to delete this comment");
   }
 
@@ -84,17 +82,22 @@ export async function deleteComment(req: AuthenticatedRequest<CommentsParams>, r
       id: Number(commentId),
     },
   });
-
-  res.sendStatus(204);
 }
 
-export async function getPostComments(
-  req: AuthenticatedRequest<PostParams, unknown, unknown, Omit<FilterQueryOutput, 'state'>>,
-  res: Response,
-) {
-  const { postId } = req.params;
-  const { limit, page, search } = req.query;
-
+interface GetPostCommentsParams extends Omit<FilterQueryOutput, 'state'> {
+  user?: {
+    id: number;
+    role: Role;
+  };
+  postId: number;
+}
+export async function getPostComments({
+  limit,
+  page,
+  search,
+  user,
+  postId,
+}: GetPostCommentsParams) {
   const post = await prisma.post.findUnique({
     where: {
       id: Number(postId),
@@ -110,8 +113,8 @@ export async function getPostComments(
   }
 
   if (
-    (post.state !== 'PUBLISHED' && !req.user) ||
-    (post.state !== 'PUBLISHED' && req.user && req.user.role !== 'ADMIN')
+    (post.state !== 'PUBLISHED' && !user) ||
+    (post.state !== 'PUBLISHED' && user && user.role !== 'ADMIN')
   ) {
     throw new HttpError(403, 'Forbidden: Admin access required');
   }
@@ -145,21 +148,18 @@ export async function getPostComments(
     }),
   ]);
 
-  res.json({
-    data: comments,
-    totalCount: commentsCount,
-    currentPage: page ?? 1,
-    pageSize: limit ?? 10,
-  });
+  return { comments, commentsCount };
 }
 
-export async function createComment(
-  req: AuthenticatedRequest<PostParams, unknown, CreateCommentBody>,
-  res: Response,
-) {
-  const { postId } = req.params;
-  const { content } = req.body;
-
+export async function createComment({
+  postId,
+  content,
+  user,
+}: {
+  postId: number;
+  content: string;
+  user?: { id: number; role: Role };
+}) {
   const post = await prisma.post.findUnique({
     where: {
       id: Number(postId),
@@ -174,9 +174,9 @@ export async function createComment(
     data: {
       postId: Number(postId),
       content,
-      userId: req.user!.id,
+      userId: user!.id,
     },
   });
 
-  res.json(comment);
+  return comment;
 }

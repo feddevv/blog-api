@@ -1,5 +1,9 @@
 import { Router } from 'express';
-import { deleteComment, getCommentById, updateComment } from '../controllers/commentsController.js';
+import {
+  deleteComment,
+  getCommentById,
+  updateComment,
+} from '../controllers/comments.controller.js';
 import { validator } from '../validation/validator.js';
 import { commentsParamsSchema, updateCommentBodySchema } from '../validation/commentsSchemas.js';
 import { authenticate } from '../middleware/authenticate.js';
