@@ -7,6 +7,7 @@ import {
 import { validator } from '../validation/validator.js';
 import { commentsParamsSchema, updateCommentBodySchema } from '../validation/commentsSchemas.js';
 import { authenticate } from '../middleware/authenticate.js';
+import { router as commentLikesRouter } from './commentLikes.route.js';
 
 const router = Router();
 
@@ -23,5 +24,7 @@ router.delete(
   authenticate,
   deleteComment,
 );
+
+router.use('/:commentId/likes', commentLikesRouter);
 
 export { router };
