@@ -17,7 +17,7 @@ import {
 import { authenticate, optionalAuthenticate } from '../middleware/authenticate.js';
 import { isAdmin, isEditor } from '../middleware/checkRoles.js';
 import { router as nestedCommentsRouter } from './nestedComments.route.js';
-import { router as likesRouter } from './likes.route.js';
+import { router as likesRouter } from './postLikes.route.js';
 import multer from 'multer';
 
 const router = Router();
