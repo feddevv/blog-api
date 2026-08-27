@@ -11,7 +11,10 @@ import * as commentsService from '../services/comments.service.js';
 export async function getCommentById(req: AuthenticatedRequest<CommentsParams>, res: Response) {
   const { commentId } = req.params;
 
-  const comment = await commentsService.getCommentById({ commentId: Number(commentId) });
+  const comment = await commentsService.getCommentById({
+    commentId: Number(commentId),
+    user: req.user,
+  });
 
   res.json(comment);
 }

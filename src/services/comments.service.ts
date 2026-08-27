@@ -4,12 +4,29 @@ import { Role } from '../generated/prisma/enums.js';
 import { prisma } from '../lib/prisma.js';
 import { FilterQueryOutput } from '../validation/postsSchemas.js';
 
-export async function getCommentById({ commentId }: { commentId: number }) {
+export async function getCommentById({
+  commentId,
+  user,
+}: {
+  commentId: number;
+  user?: {
+    id: number;
+    role: Role;
+  };
+}) {
   const comment = await prisma.comment.findFirst({
     where: {
       id: commentId,
       post: {
         state: 'PUBLISHED',
+      },
+    },
+    include: {
+      likes: user ? { where: { userId: user.id } } : false,
+      _count: {
+        select: {
+          likes: true,
+        },
       },
     },
   });
@@ -18,7 +35,11 @@ export async function getCommentById({ commentId }: { commentId: number }) {
     throw new HttpError(404, 'Comment not found');
   }
 
-  return comment;
+  const { _count, likes, ...restComment } = comment;
+  const likesCount = _count.likes;
+  const isLiked = likes ? likes.length > 0 : false;
+
+  return { ...restComment, likesCount, isLiked };
 }
 
 interface UpdateCommentParams {
@@ -138,6 +159,12 @@ export async function getPostComments({
             username: true,
           },
         },
+        likes: user ? { where: { userId: user.id } } : false,
+        _count: {
+          select: {
+            likes: true,
+          },
+        },
       },
       orderBy: {
         createdAt: 'desc',
@@ -148,7 +175,14 @@ export async function getPostComments({
     }),
   ]);
 
-  return { comments, commentsCount };
+  const mappedComments = comments.map(({ _count, likes, ...comment }) => {
+    const likesCount = _count.likes;
+    const isLiked = likes ? likes.length > 0 : false;
+
+    return { ...comment, likesCount, isLiked };
+  });
+
+  return { comments: mappedComments, commentsCount };
 }
 
 export async function createComment({
