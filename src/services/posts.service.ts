@@ -37,17 +37,32 @@ export async function getPosts({ limit, page, search, state, user }: GetPostsPar
       orderBy: {
         createdAt: 'desc',
       },
+      include: {
+        likes: user
+          ? {
+              where: { userId: user.id },
+              select: { id: true },
+            }
+          : false,
+        _count: {
+          select: {
+            likes: true,
+          },
+        },
+      },
     }),
     prisma.post.count({ where }),
   ]);
 
-  const postsWithImgUrls = posts.map((post) => {
+  const mappedPosts = posts.map(({ _count, likes, ...post }) => {
     const imageUrl = `${process.env.R2_PUBLIC_URL}/${post.imageKey}`;
+    const likesCount = _count.likes;
+    const isLiked = likes ? likes.length > 0 : false;
 
-    return { ...post, imageUrl };
+    return { ...post, imageUrl, likesCount, isLiked };
   });
 
-  return { posts: postsWithImgUrls, postsCount };
+  return { posts: mappedPosts, postsCount };
 }
 
 export async function getPostById(postId: number, user?: { id: number; role: Role }) {
@@ -60,6 +75,18 @@ export async function getPostById(postId: number, user?: { id: number; role: Rol
         take: 10,
         orderBy: {
           createdAt: 'desc',
+        },
+      },
+      likes: user
+        ? {
+            where: {
+              userId: user.id,
+            },
+          }
+        : false,
+      _count: {
+        select: {
+          likes: true,
         },
       },
     },
@@ -76,9 +103,12 @@ export async function getPostById(postId: number, user?: { id: number; role: Rol
     throw new HttpError(403, 'Forbidden: Admin access required');
   }
 
+  const { _count, likes, ...rest } = post;
   const imageUrl = `${process.env.R2_PUBLIC_URL}/${post.imageKey}`;
+  const likesCount = _count.likes;
+  const isLiked = likes ? likes.length > 0 : false;
 
-  return { ...post, imageUrl };
+  return { ...rest, imageUrl, likesCount, isLiked };
 }
 
 interface CreatePostParams extends CreatePostBody {
