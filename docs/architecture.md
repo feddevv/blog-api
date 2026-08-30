@@ -1,137 +1,258 @@
 # Architecture Overview
 
-This project follows a layered Express architecture:
+This project implements a layered Express + TypeScript REST API designed for blog content management, comments, user interactions (likes), and media uploads. The architecture follows a strict separation of concerns across distinct layers: **Routing**, **Middleware**, **Controllers**, **Services**, and **Data Access / Infrastructure**.
 
-- Routes define the HTTP surface and attach validation, authentication, and role checks in the right order.
-- Controllers hold the request-specific business logic and shape responses.
-- Middleware handles cross-cutting concerns such as JWT authentication, authorization, validation, and error handling.
-- Prisma provides the database access layer through a generated client.
-- Zod schemas validate incoming request bodies, params, and query strings before controller logic runs.
+```mermaid
+flowchart TD
+    Client(["HTTP Client / Frontend"])
 
-The result is a structure where each layer has a narrow responsibility and route behavior is easy to trace from URL to controller.
+    subgraph AppServer ["Express Application Server"]
+        App["src/app.ts (Global Middleware & Routing)"]
+        
+        subgraph MiddlewareLayer ["Middleware Layer"]
+            Cors["cors / cookie-parser / express.json"]
+            Val["Zod Validation (validator)"]
+            Auth["JWT Auth (authenticate / optionalAuthenticate)"]
+            Roles["Role Guards (isAdmin / isEditor)"]
+            Err["Centralized Error Handler (errorHandler)"]
+        end
 
-## `src` Folder Tree
+        subgraph RoutesLayer ["Routes Layer"]
+            AuthRoute["auth.route.ts"]
+            PostsRoute["posts.route.ts"]
+            CommentsRoute["comments.route.ts"]
+            NestedComments["nestedComments.route.ts"]
+            LikesRoutes["postLikes / commentLikes.route.ts"]
+        end
+
+        subgraph ControllerLayer ["Controllers Layer"]
+            AuthCtrl["auth.controller.ts"]
+            PostsCtrl["posts.controller.ts"]
+            CommentsCtrl["comments.controller.ts"]
+            LikesCtrl["postLikes / commentLikes.controller.ts"]
+        end
+
+        subgraph ServiceLayer ["Services Layer (Business Logic)"]
+            AuthSvc["auth.service.ts"]
+            PostsSvc["posts.service.ts"]
+            CommentsSvc["comments.service.ts"]
+            LikesSvc["likes.service.ts"]
+        end
+
+        subgraph LibLayer ["Infrastructure & Data Access Layer"]
+            PrismaClientInstance["Prisma Client (lib/prisma.ts)"]
+            S3ClientInstance["S3 Client (lib/s3.ts)"]
+        end
+    end
+
+    subgraph ExternalServices ["External Infrastructure"]
+        PostgreSQL[("PostgreSQL Database")]
+        CloudflareR2[("Cloudflare R2 (S3-Compatible Object Storage)")]
+    end
+
+    Client <--> App
+    App --> Cors --> RoutesLayer
+    RoutesLayer --> Val --> Auth --> Roles --> ControllerLayer
+    ControllerLayer --> ServiceLayer
+    ServiceLayer --> PrismaClientInstance --> PostgreSQL
+    ServiceLayer --> S3ClientInstance --> CloudflareR2
+    MiddlewareLayer -.-> Err
+    ControllerLayer -.-> Err
+    ServiceLayer -.-> Err
+    Err --> Client
+```
+
+---
+
+## Tech Stack
+
+| Domain | Technology / Library | Role & Purpose |
+| --- | --- | --- |
+| **Runtime & Language** | Node.js (ESM), TypeScript | Execution runtime and static type checking |
+| **Web Framework** | Express 5 | HTTP server, middleware chaining, and route handling |
+| **Database & ORM** | PostgreSQL, Prisma ORM (`@prisma/client`, `@prisma/adapter-pg`) | Relational persistence, migrations, and type-safe query building |
+| **Object Storage** | Cloudflare R2, AWS SDK v3 (`@aws-sdk/client-s3`) | S3-compatible cloud object storage for post hero images |
+| **File Handling** | Multer (`multer`) | `multipart/form-data` parsing and in-memory buffer handling |
+| **Validation** | Zod | Runtime schema validation for request params, query, body, and files |
+| **Auth & Security** | JWT (`jsonwebtoken`), `bcrypt`, `cookie-parser`, `cors` | Token-based authentication, password hashing, HttpOnly cookie sessions, and CORS policy |
+| **API Documentation** | OpenAPI 3.0, Swagger UI (`swagger-ui-express`, `yamljs`) | Interactive API documentation hosted at `/api-docs` |
+
+---
+
+## Directory Structure (`src/`)
 
 ```text
 src/
 ├── app.ts
 ├── controllers/
-│   ├── authController.ts
-│   ├── commentsController.ts
-│   └── postsController.ts
-├── db/
-│   └── prisma.ts
+│   ├── auth.controller.ts
+│   ├── commentLikes.controller.ts
+│   ├── comments.controller.ts
+│   ├── postLikes.controller.ts
+│   └── posts.controller.ts
 ├── errors/
 │   └── HttpError.ts
 ├── generated/
 │   └── prisma/
+├── lib/
+│   ├── prisma.ts
+│   └── s3.ts
 ├── middleware/
 │   ├── authenticate.ts
 │   ├── checkRoles.ts
 │   └── error.ts
 ├── routes/
-│   ├── auth.ts
-│   ├── comments.ts
-│   ├── nestedComments.ts
-│   └── posts.ts
+│   ├── auth.route.ts
+│   ├── commentLikes.route.ts
+│   ├── comments.route.ts
+│   ├── nestedComments.route.ts
+│   ├── postLikes.route.ts
+│   └── posts.route.ts
+├── services/
+│   ├── auth.service.ts
+│   ├── comments.service.ts
+│   ├── likes.service.ts
+│   └── posts.service.ts
 ├── types/
 │   └── types.ts
+├── utils/
+│   └── cookies.ts
 └── validation/
-	├── authSchemas.ts
-	├── commentsSchemas.ts
-	├── postsSchemas.ts
-	├── utils.ts
-	└── validator.ts
+    ├── authSchemas.ts
+    ├── commentsSchemas.ts
+    ├── postsSchemas.ts
+    ├── utils.ts
+    └── validator.ts
 ```
 
-### Folder Descriptions
+### Layer Responsibilities
 
-- `app.ts` wires the Express app, global middleware, routers, and error handler.
-- `controllers/` contains the core operations for authentication, posts, and comments.
-- `db/` exposes the Prisma client configuration used throughout the app.
-- `errors/` defines application-specific error types such as `HttpError`.
-- `generated/prisma/` stores the generated Prisma client output.
-- `middleware/` contains authentication, role checks, and centralized error handling.
-- `routes/` defines the API endpoints and composes middleware chains.
-- `types/` contains shared TypeScript request types.
-- `validation/` contains Zod schemas and helpers for request validation.
+1. **Entry Point (`src/app.ts`)**:
+   - Boots the Express application and attaches core top-level middlewares (`express.json()`, `cors`, `cookieParser()`, custom `req.query` descriptor).
+   - Mounts Swagger UI documentation (`/api-docs`).
+   - Mounts top-level routers (`/api/auth`, `/api/posts`, `/api/comments`).
+   - Registers the global error handler (`errorHandler`) as the final middleware.
 
-## Route and Middleware Design
+2. **Routes Layer (`src/routes/`)**:
+   - Defines HTTP endpoints, HTTP verbs, and URL parameter paths.
+   - Composes middleware in sequence: file upload -> schema validation -> authentication -> authorization guards -> controller.
+   - Handles sub-routing (e.g., nested comments under `/api/posts/:postId/comments` and likes under `/api/posts/:postId/likes`).
 
-The main entry point is [`src/app.ts`](../src/app.ts), which mounts these route groups:
+3. **Middleware Layer (`src/middleware/`)**:
+   - `validator.ts`: Executes Zod schemas on `req.body`, `req.params`, `req.query`, and `req.file`.
+   - `authenticate.ts`: Decodes and verifies JWT Bearer tokens from the `Authorization` header and populates `req.user` (`authenticate` for mandatory auth, `optionalAuthenticate` for public endpoints that adapt if a user is logged in).
+   - `checkRoles.ts`: Enforces role-based access control (`isAdmin`, `isEditor`).
+   - `error.ts`: Centralizes error interception. Maps `HttpError` to corresponding HTTP status codes, formats `ZodError` into structured error lists (HTTP 422), and masks unhandled exceptions (HTTP 500).
 
-- `/api/auth` -> [`src/routes/auth.ts`](../src/routes/auth.ts)
-- `/api/posts` -> [`src/routes/posts.ts`](../src/routes/posts.ts)
-- `/api/comments` -> [`src/routes/comments.ts`](../src/routes/comments.ts)
+4. **Controllers Layer (`src/controllers/`)**:
+   - Extracts typed inputs from `req.body`, `req.params`, `req.query`, `req.file`, and `req.user`.
+   - Delegates business logic execution directly to the Services layer.
+   - Formats and sends HTTP responses (status codes, JSON payloads, pagination metadata).
 
-The route modules compose middleware in a predictable order:
+5. **Services Layer (`src/services/`)**:
+   - Houses all core business rules and domain logic.
+   - Interacts with Prisma ORM (`prisma`) for database CRUD and transactions.
+   - Handles password hashing (`bcrypt`), JWT token generation, and refresh token cookie synchronization (`utils/cookies.ts`).
+   - Manages S3 / Cloudflare R2 uploads and cleanup (`PutObjectCommand`, `DeleteObjectCommand`).
+   - Throws domain/operational `HttpError` instances when business constraints are violated.
 
-- Validation runs first so bad input is rejected early.
-- `authenticate` or `optionalAuthenticate` parses and verifies the JWT when a request needs user context.
-- `isAdmin` or `isEditor` enforces role-based access for write operations on posts.
-- Controllers execute only after the request has passed the required guards.
+6. **Infrastructure & Shared Utilities (`src/lib/`, `src/utils/`, `src/errors/`, `src/types/`)**:
+   - `lib/prisma.ts`: Initializes `PrismaClient` with `@prisma/adapter-pg`.
+   - `lib/s3.ts`: Configures `S3Client` pointing to Cloudflare R2 endpoints.
+   - `utils/cookies.ts`: Helper functions to set and clear secure `HttpOnly` refresh token cookies.
+   - `errors/HttpError.ts`: Custom error class containing HTTP status codes.
+   - `types/types.ts`: Express `Request` type extensions (`AuthenticatedRequest`).
 
-Main middleware responsibilities:
+---
 
-- `authenticate.ts` extracts a bearer token, verifies it with `SECRET_KEY`, and attaches `req.user`.
-- `checkRoles.ts` blocks requests that do not match the required role.
-- `error.ts` converts `HttpError`, `ZodError`, and unexpected failures into JSON responses.
+## Authentication & Session Management
 
-Main route responsibilities:
+The API implements a dual-token authentication model:
 
-- `auth.ts` handles registration and login.
-- `posts.ts` handles public reads, admin/editor writes, and nested comment routing under `/api/posts/:postId/comments`.
-- `comments.ts` handles direct comment reads and updates/deletes.
-- `nestedComments.ts` handles comments that belong to a specific post.
+- **Access Token**:
+  - Stateless JSON Web Token (JWT) with a short lifespan (15 minutes).
+  - Payload contains `id` and `role` (`USER`, `EDITOR`, `ADMIN`).
+  - Passed via the HTTP `Authorization: Bearer <token>` header.
+- **Refresh Token**:
+  - Long-lived token (10 days) stored in the PostgreSQL database (`RefreshToken` table).
+  - Delivered and stored in a secure, `HttpOnly`, `SameSite=Lax` cookie.
+  - Rotated upon every refresh (`POST /api/auth/refresh`).
+  - Deleted from database and cleared from browser cookies upon logout (`POST /api/auth/logout`).
 
-## Request Lifecycle
+---
 
-1. The client sends an HTTP request to the Express app.
-2. `express.json()` parses the request body when present.
-3. The app-level query helper makes `req.query` writable for later validation and mutation.
-4. The request enters the matching router under `/api/auth`, `/api/posts`, or `/api/comments`.
-5. Route-level Zod validation checks `body`, `params`, or `query` data.
-6. If the route is protected, JWT authentication verifies the bearer token and populates `req.user`.
-7. If the route requires a specific role, role middleware checks `req.user.role`.
-8. The controller runs the business logic and calls Prisma through the database layer.
-9. The controller sends a JSON response.
-10. If anything fails, the centralized error handler returns a consistent error payload.
+## Core Data Models & Relations
 
-## Mermaid Sequence
+Defined in `prisma/schema.prisma`:
 
-The sequence below shows a common authorized request flow, such as creating a post or updating a comment.
+| Model | Purpose | Key Relations |
+| --- | --- | --- |
+| **`User`** | Stores credentials and authorization roles (`USER`, `EDITOR`, `ADMIN`). | Has many `Post`, `Comment`, `PostLike`, `CommentLike`, `RefreshToken`. |
+| **`Post`** | Blog posts with visibility state (`DRAFT`, `PUBLISHED`, `HIDDEN`) and R2 `imageKey`. | Belongs to `User`; has many `Comment`, `PostLike`. |
+| **`Comment`** | User comments attached to blog posts. | Belongs to `User` and `Post`; has many `CommentLike`. |
+| **`PostLike`** | Unique like toggle per `(postId, userId)` pair. | Belongs to `Post` and `User`. |
+| **`CommentLike`** | Unique like toggle per `(commentId, userId)` pair. | Belongs to `Comment` and `User`. |
+| **`RefreshToken`** | Stores active refresh tokens for session rotation and revocation. | Belongs to `User`. |
+
+---
+
+## Request Lifecycle & Data Flow
+
+### Sequence Diagram: Authenticated Post Creation with Image Upload
 
 ```mermaid
 sequenceDiagram
-	autonumber
-	actor Client
-	participant App as Express app
-	participant Route as Route handler
-	participant Validate as Validation middleware
-	participant Auth as authenticate
-	participant Roles as Role middleware
-	participant Controller as Controller
-	participant DB as Prisma client
-	participant Errors as errorHandler
+    autonumber
+    actor Client
+    participant Express as Express App
+    participant Multer as Multer Middleware
+    participant Val as Zod Validator
+    participant Auth as Authenticate Middleware
+    participant Role as Role Guard (isAdmin)
+    participant Ctrl as Posts Controller
+    participant Svc as Posts Service
+    participant S3 as Cloudflare R2 (S3)
+    participant DB as Prisma (PostgreSQL)
+    participant Err as Error Handler
 
-	Client->>App: HTTP request with Authorization header
-	App->>Route: Match route and forward request
-	Route->>Validate: Validate body/params/query with Zod
-	Validate-->>Route: Valid data
-	Route->>Auth: Verify bearer token
-	Auth-->>Route: req.user populated
-	Route->>Roles: Check access policy
-	Roles-->>Route: Authorized
-	Route->>Controller: Execute business logic
-	Controller->>DB: Query or mutate data
-	DB-->>Controller: Result set or write confirmation
-	Controller-->>Client: JSON response
-
-	alt Validation/auth/authorization/runtime error
-		Validate-->>Errors: Throw or pass error
-		Auth-->>Errors: Throw or pass error
-		Roles-->>Errors: Throw or pass error
-		Controller-->>Errors: Pass error
-		Errors-->>Client: JSON error response
-	end
+    Client->>Express: POST /api/posts (multipart/form-data + Bearer Token)
+    Express->>Multer: Parse multipart payload
+    Multer-->>Express: req.file (buffer) & req.body populated
+    Express->>Val: Validate body & file schemas
+    alt Schema validation fails
+        Val-->>Err: Throw ZodError
+        Err-->>Client: 422 Unprocessable Entity (Field error details)
+    end
+    Val-->>Express: Validated data
+    Express->>Auth: Verify JWT from Authorization header
+    alt Missing or invalid token
+        Auth-->>Err: Throw HttpError(401)
+        Err-->>Client: 401 Unauthorized
+    end
+    Auth-->>Express: req.user populated
+    Express->>Role: Check req.user.role == 'ADMIN'
+    alt Insufficient role
+        Role-->>Err: Throw HttpError(403)
+        Err-->>Client: 403 Forbidden
+    end
+    Role-->>Ctrl: createPost(req, res)
+    Ctrl->>Svc: createPost({ title, content, description, file, user })
+    Svc->>S3: PutObjectCommand (Upload image buffer to R2)
+    alt S3 upload fails
+        S3-->>Svc: Error
+        Svc-->>Err: Propagate Error
+        Err-->>Client: 500 Internal Server Error
+    end
+    S3-->>Svc: Upload success (imageKey)
+    Svc->>DB: prisma.post.create(...)
+    alt DB insert fails
+        DB-->>Svc: Prisma Error
+        Svc->>S3: DeleteObjectCommand (Compensating rollback)
+        Svc-->>Err: Propagate Error
+        Err-->>Client: Error response
+    end
+    DB-->>Svc: Created Post record
+    Svc-->>Ctrl: Post entity
+    Ctrl-->>Client: 201 Created (Post JSON)
 ```
+
