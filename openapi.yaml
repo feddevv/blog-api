@@ -45,11 +45,32 @@ paths:
               example:
                 message: Created
         '409':
-          $ref: '#/components/responses/ConflictResponse'
+          description: The request conflicts with an existing resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Username or email is already taken
         '422':
-          $ref: '#/components/responses/ValidationErrorResponse'
+          description: The request parameters, query, body, or file failed validation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Validation failed
+                errors:
+                  - message: Username must be at least 3 characters
+                    path: username
         '500':
-          $ref: '#/components/responses/InternalServerErrorResponse'
+          description: An unexpected server error occurred.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Something went wrong!
 
   /api/auth/login:
     post:
@@ -82,11 +103,32 @@ paths:
               example:
                 token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
         '401':
-          $ref: '#/components/responses/UnauthorizedResponse'
+          description: Authentication failed due to incorrect credentials.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Username or password is incorrect
         '422':
-          $ref: '#/components/responses/ValidationErrorResponse'
+          description: The request parameters, query, body, or file failed validation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Validation failed
+                errors:
+                  - message: Password must be at least 8 characters
+                    path: password
         '500':
-          $ref: '#/components/responses/InternalServerErrorResponse'
+          description: An unexpected server error occurred.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Something went wrong!
 
   /api/auth/me:
     get:
@@ -103,13 +145,36 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                $ref: '#/components/schemas/UserResponse'
+              example:
+                id: 1
+                username: john_doe
+                email: john@example.com
+                role: USER
         '401':
-          $ref: '#/components/responses/UnauthorizedResponse'
+          description: Authentication failed or token is missing, invalid, or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Token not found or invalid format
         '404':
-          $ref: '#/components/responses/NotFoundResponse'
+          description: The requested user was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: User not found
         '500':
-          $ref: '#/components/responses/InternalServerErrorResponse'
+          description: An unexpected server error occurred.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Something went wrong!
 
   /api/auth/refresh:
     post:
@@ -140,9 +205,21 @@ paths:
               example:
                 token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
         '401':
-          $ref: '#/components/responses/UnauthorizedResponse'
+          description: Refresh token is missing, invalid, expired, or counterfeit.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Invalid or expired token
         '500':
-          $ref: '#/components/responses/InternalServerErrorResponse'
+          description: An unexpected server error occurred.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Something went wrong!
 
   /api/auth/logout:
     post:
@@ -173,7 +250,13 @@ paths:
               example:
                 message: Successfully logged out
         '500':
-          $ref: '#/components/responses/InternalServerErrorResponse'
+          description: An unexpected server error occurred.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Something went wrong!
 
   /api/posts:
     get:
@@ -225,11 +308,32 @@ paths:
               schema:
                 $ref: '#/components/schemas/PostsListResponse'
         '401':
-          $ref: '#/components/responses/UnauthorizedResponse'
+          description: Authentication failed or token is invalid or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Invalid or expired token
         '422':
-          $ref: '#/components/responses/ValidationErrorResponse'
+          description: The request parameters, query, body, or file failed validation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Validation failed
+                errors:
+                  - message: Must be one of (PUBLISHED, HIDDEN, DRAFT)
+                    path: state
         '500':
-          $ref: '#/components/responses/InternalServerErrorResponse'
+          description: An unexpected server error occurred.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Something went wrong!
     post:
       tags: [Posts]
       summary: Create a new post
@@ -253,15 +357,48 @@ paths:
               schema:
                 $ref: '#/components/schemas/Post'
         '400':
-          $ref: '#/components/responses/BadRequestResponse'
+          description: The request parameters or payload are invalid or missing required data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: File wasn't sent
         '401':
-          $ref: '#/components/responses/UnauthorizedResponse'
+          description: Authentication failed or token is missing, invalid, or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Token not found or invalid format
         '403':
-          $ref: '#/components/responses/ForbiddenResponse'
+          description: The authenticated user is not authorized to access or modify this resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: 'Forbidden: Admin access required'
         '422':
-          $ref: '#/components/responses/ValidationErrorResponse'
+          description: The request parameters, query, body, or file failed validation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Validation failed
+                errors:
+                  - message: Title must be at least 5 characters
+                    path: title
         '500':
-          $ref: '#/components/responses/InternalServerErrorResponse'
+          description: An unexpected server error occurred.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Something went wrong!
 
   /api/posts/{postId}:
     get:
@@ -274,7 +411,13 @@ paths:
         - {}
         - bearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/PostId'
+        - name: postId
+          in: path
+          required: true
+          description: Numeric post identifier.
+          schema:
+            type: integer
+            minimum: 1
       responses:
         '200':
           description: The requested post and its latest comments.
@@ -283,15 +426,48 @@ paths:
               schema:
                 $ref: '#/components/schemas/PostWithCommentsResponse'
         '401':
-          $ref: '#/components/responses/UnauthorizedResponse'
+          description: Authentication failed or token is invalid or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Invalid or expired token
         '403':
-          $ref: '#/components/responses/ForbiddenResponse'
+          description: The authenticated user is not authorized to access this post.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: 'Forbidden: Admin access required'
         '404':
-          $ref: '#/components/responses/NotFoundResponse'
+          description: The requested resource was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Post not found
         '422':
-          $ref: '#/components/responses/ValidationErrorResponse'
+          description: The request parameters, query, body, or file failed validation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Validation failed
+                errors:
+                  - message: Must be positive
+                    path: postId
         '500':
-          $ref: '#/components/responses/InternalServerErrorResponse'
+          description: An unexpected server error occurred.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Something went wrong!
     put:
       tags: [Posts]
       summary: Update a post
@@ -302,7 +478,13 @@ paths:
       security:
         - bearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/PostId'
+        - name: postId
+          in: path
+          required: true
+          description: Numeric post identifier.
+          schema:
+            type: integer
+            minimum: 1
       requestBody:
         required: true
         content:
@@ -322,15 +504,45 @@ paths:
               schema:
                 $ref: '#/components/schemas/Post'
         '401':
-          $ref: '#/components/responses/UnauthorizedResponse'
+          description: Authentication failed or token is missing, invalid, or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Token not found or invalid format
         '403':
-          $ref: '#/components/responses/ForbiddenResponse'
+          description: The authenticated user is not authorized to access or modify this resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: 'Forbidden: Admin or editor access required'
         '404':
-          $ref: '#/components/responses/NotFoundResponse'
+          description: The requested resource was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Post not found
         '422':
-          $ref: '#/components/responses/ValidationErrorResponse'
+          description: The request parameters, query, body, or file failed validation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Content is required for publishing posts
         '500':
-          $ref: '#/components/responses/InternalServerErrorResponse'
+          description: An unexpected server error occurred.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Something went wrong!
     delete:
       tags: [Posts]
       summary: Delete a post
@@ -339,20 +551,122 @@ paths:
       security:
         - bearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/PostId'
+        - name: postId
+          in: path
+          required: true
+          description: Numeric post identifier.
+          schema:
+            type: integer
+            minimum: 1
       responses:
         '204':
           description: Post deleted successfully. No response body is returned.
         '401':
-          $ref: '#/components/responses/UnauthorizedResponse'
+          description: Authentication failed or token is missing, invalid, or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Token not found or invalid format
         '403':
-          $ref: '#/components/responses/ForbiddenResponse'
+          description: The authenticated user is not authorized to access or modify this resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: 'Forbidden: Admin access required'
         '404':
-          $ref: '#/components/responses/NotFoundResponse'
+          description: The requested resource was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Post not found
         '422':
-          $ref: '#/components/responses/ValidationErrorResponse'
+          description: The request parameters, query, body, or file failed validation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Validation failed
+                errors:
+                  - message: Must be positive
+                    path: postId
         '500':
-          $ref: '#/components/responses/InternalServerErrorResponse'
+          description: An unexpected server error occurred.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Something went wrong!
+
+  /api/posts/{postId}/likes:
+    post:
+      tags: [Posts]
+      summary: Toggle like on a post
+      description: >-
+        Likes or unlikes a post for the authenticated user. If already liked, the
+        like is removed and returns 'Unliked'; otherwise, a like is created and
+        returns 'Liked'.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          description: Numeric post identifier.
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '201':
+          description: Like status toggled successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LikeToggleResponse'
+              example:
+                message: Liked
+        '401':
+          description: Authentication failed or token is missing, invalid, or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Token not found or invalid format
+        '404':
+          description: The requested post was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Post not found
+        '422':
+          description: The request parameters, query, body, or file failed validation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Validation failed
+                errors:
+                  - message: Must be positive
+                    path: postId
+        '500':
+          description: An unexpected server error occurred.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Something went wrong!
 
   /api/posts/{postId}/comments:
     get:
@@ -366,7 +680,13 @@ paths:
         - {}
         - bearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/PostId'
+        - name: postId
+          in: path
+          required: true
+          description: Numeric post identifier.
+          schema:
+            type: integer
+            minimum: 1
         - name: search
           in: query
           required: false
@@ -397,15 +717,48 @@ paths:
               schema:
                 $ref: '#/components/schemas/CommentsListResponse'
         '401':
-          $ref: '#/components/responses/UnauthorizedResponse'
+          description: Authentication failed or token is invalid or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Invalid or expired token
         '403':
-          $ref: '#/components/responses/ForbiddenResponse'
+          description: The authenticated user is not authorized to access comments for this post.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: 'Forbidden: Admin access required'
         '404':
-          $ref: '#/components/responses/NotFoundResponse'
+          description: The requested resource was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Post not found
         '422':
-          $ref: '#/components/responses/ValidationErrorResponse'
+          description: The request parameters, query, body, or file failed validation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Validation failed
+                errors:
+                  - message: Must be positive
+                    path: postId
         '500':
-          $ref: '#/components/responses/InternalServerErrorResponse'
+          description: An unexpected server error occurred.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Something went wrong!
     post:
       tags: [Comments]
       summary: Create a comment for a post
@@ -414,7 +767,13 @@ paths:
       security:
         - bearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/PostId'
+        - name: postId
+          in: path
+          required: true
+          description: Numeric post identifier.
+          schema:
+            type: integer
+            minimum: 1
       requestBody:
         required: true
         content:
@@ -431,13 +790,40 @@ paths:
               schema:
                 $ref: '#/components/schemas/Comment'
         '401':
-          $ref: '#/components/responses/UnauthorizedResponse'
+          description: Authentication failed or token is missing, invalid, or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Token not found or invalid format
         '404':
-          $ref: '#/components/responses/NotFoundResponse'
+          description: The requested resource was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Post not found
         '422':
-          $ref: '#/components/responses/ValidationErrorResponse'
+          description: The request parameters, query, body, or file failed validation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Validation failed
+                errors:
+                  - message: Content is required
+                    path: content
         '500':
-          $ref: '#/components/responses/InternalServerErrorResponse'
+          description: An unexpected server error occurred.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Something went wrong!
 
   /api/comments/{commentId}:
     get:
@@ -446,21 +832,59 @@ paths:
       description: >-
         Returns a single comment if the parent post is published. Comments on
         hidden or draft posts are not accessible via this endpoint.
+      security:
+        - {}
+        - bearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/CommentId'
+        - name: commentId
+          in: path
+          required: true
+          description: Numeric comment identifier.
+          schema:
+            type: integer
+            minimum: 1
       responses:
         '200':
           description: The requested comment.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Comment'
+                $ref: '#/components/schemas/CommentWithDetails'
+        '401':
+          description: Authentication failed or token is invalid or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Invalid or expired token
         '404':
-          $ref: '#/components/responses/NotFoundResponse'
+          description: The requested resource was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Comment not found
         '422':
-          $ref: '#/components/responses/ValidationErrorResponse'
+          description: The request parameters, query, body, or file failed validation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Validation failed
+                errors:
+                  - message: Must be positive
+                    path: commentId
         '500':
-          $ref: '#/components/responses/InternalServerErrorResponse'
+          description: An unexpected server error occurred.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Something went wrong!
     put:
       tags: [Comments]
       summary: Update a comment
@@ -470,7 +894,13 @@ paths:
       security:
         - bearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/CommentId'
+        - name: commentId
+          in: path
+          required: true
+          description: Numeric comment identifier.
+          schema:
+            type: integer
+            minimum: 1
       requestBody:
         required: true
         content:
@@ -487,15 +917,48 @@ paths:
               schema:
                 $ref: '#/components/schemas/Comment'
         '401':
-          $ref: '#/components/responses/UnauthorizedResponse'
+          description: Authentication failed or token is missing, invalid, or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Token not found or invalid format
         '403':
-          $ref: '#/components/responses/ForbiddenResponse'
+          description: The authenticated user is not authorized to access or modify this resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "You don't have access to update this comment"
         '404':
-          $ref: '#/components/responses/NotFoundResponse'
+          description: The requested resource was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Comment not found
         '422':
-          $ref: '#/components/responses/ValidationErrorResponse'
+          description: The request parameters, query, body, or file failed validation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Validation failed
+                errors:
+                  - message: Not a string
+                    path: content
         '500':
-          $ref: '#/components/responses/InternalServerErrorResponse'
+          description: An unexpected server error occurred.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Something went wrong!
     delete:
       tags: [Comments]
       summary: Delete a comment
@@ -505,20 +968,122 @@ paths:
       security:
         - bearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/CommentId'
+        - name: commentId
+          in: path
+          required: true
+          description: Numeric comment identifier.
+          schema:
+            type: integer
+            minimum: 1
       responses:
         '204':
           description: Comment deleted successfully. No response body is returned.
         '401':
-          $ref: '#/components/responses/UnauthorizedResponse'
+          description: Authentication failed or token is missing, invalid, or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Token not found or invalid format
         '403':
-          $ref: '#/components/responses/ForbiddenResponse'
+          description: The authenticated user is not authorized to access or modify this resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "You don't have access to delete this comment"
         '404':
-          $ref: '#/components/responses/NotFoundResponse'
+          description: The requested resource was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Comment not found
         '422':
-          $ref: '#/components/responses/ValidationErrorResponse'
+          description: The request parameters, query, body, or file failed validation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Validation failed
+                errors:
+                  - message: Must be positive
+                    path: commentId
         '500':
-          $ref: '#/components/responses/InternalServerErrorResponse'
+          description: An unexpected server error occurred.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Something went wrong!
+
+  /api/comments/{commentId}/likes:
+    post:
+      tags: [Comments]
+      summary: Toggle like on a comment
+      description: >-
+        Likes or unlikes a comment for the authenticated user. If already liked,
+        the like is removed and returns 'Unliked'; otherwise, a like is created
+        and returns 'Liked'.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: commentId
+          in: path
+          required: true
+          description: Numeric comment identifier.
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '201':
+          description: Like status toggled successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LikeToggleResponse'
+              example:
+                message: Liked
+        '401':
+          description: Authentication failed or token is missing, invalid, or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Token not found or invalid format
+        '404':
+          description: The requested comment was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Comment not found
+        '422':
+          description: The request parameters, query, body, or file failed validation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Validation failed
+                errors:
+                  - message: Must be positive
+                    path: commentId
+        '500':
+          description: An unexpected server error occurred.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Something went wrong!
 
 components:
   securitySchemes:
@@ -530,33 +1095,45 @@ components:
         Provide the JWT returned by the login or refresh endpoints in the
         Authorization header as `Bearer <token>`.
 
-  parameters:
-    PostId:
-      name: postId
-      in: path
-      required: true
-      description: Numeric post identifier.
-      schema:
-        type: integer
-        minimum: 1
-    CommentId:
-      name: commentId
-      in: path
-      required: true
-      description: Numeric comment identifier.
-      schema:
-        type: integer
-        minimum: 1
-
   schemas:
     Role:
       type: string
-      description: User role used for authorization checks.
       enum: [USER, EDITOR, ADMIN]
+      description: User role used for authorization checks.
+
     PostState:
       type: string
-      description: Post visibility and publication state.
       enum: [DRAFT, PUBLISHED, HIDDEN]
+      description: Post visibility and publication state.
+
+    MessageResponse:
+      type: object
+      additionalProperties: false
+      required: [message]
+      properties:
+        message:
+          type: string
+          description: Status message returned by the operation.
+
+    LikeToggleResponse:
+      type: object
+      additionalProperties: false
+      required: [message]
+      properties:
+        message:
+          type: string
+          enum: [Liked, Unliked]
+          description: Status message indicating whether the resource was liked or unliked.
+
+    TokenResponse:
+      type: object
+      additionalProperties: false
+      required: [token]
+      properties:
+        token:
+          type: string
+          description: Signed JWT access token that should be sent in the Authorization header.
+
     RegisterRequest:
       type: object
       additionalProperties: false
@@ -578,6 +1155,7 @@ components:
           minLength: 8
           maxLength: 120
           description: Account password that will be hashed before storage.
+
     LoginRequest:
       type: object
       additionalProperties: false
@@ -594,22 +1172,26 @@ components:
           minLength: 8
           maxLength: 120
           description: Password associated with the account.
-    TokenResponse:
+
+    UserResponse:
       type: object
       additionalProperties: false
-      required: [token]
+      required: [id, username, email, role]
       properties:
-        token:
+        id:
+          type: integer
+          format: int32
+          description: Unique user identifier.
+        username:
           type: string
-          description: Signed JWT access token that should be sent in the Authorization header.
-    MessageResponse:
-      type: object
-      additionalProperties: false
-      required: [message]
-      properties:
-        message:
+          description: Unique username.
+        email:
           type: string
-          description: Status message returned by the operation.
+          format: email
+          description: Unique email address.
+        role:
+          $ref: '#/components/schemas/Role'
+
     CreatePostRequest:
       type: object
       required: [postImage]
@@ -631,11 +1213,11 @@ components:
           allOf:
             - $ref: '#/components/schemas/PostState'
           default: DRAFT
-          description: Post publication state. Defaults to DRAFT.
         postImage:
           type: string
           format: binary
           description: Post cover image file (JPEG, PNG, or WEBP, max 5 MB).
+
     UpdatePostRequest:
       type: object
       additionalProperties: false
@@ -653,49 +1235,12 @@ components:
           type: string
           description: Updated post content. Required when publishing.
         state:
-          allOf:
-            - $ref: '#/components/schemas/PostState'
-          description: Updated post state.
-    CreateCommentRequest:
-      type: object
-      additionalProperties: false
-      required: [content]
-      properties:
-        content:
-          type: string
-          minLength: 1
-          maxLength: 400
-          description: Comment text.
-    UpdateCommentRequest:
-      type: object
-      additionalProperties: false
-      properties:
-        content:
-          type: string
-          description: Updated comment text.
-    User:
-      type: object
-      additionalProperties: false
-      required: [id, username, email, role]
-      properties:
-        id:
-          type: integer
-          format: int32
-          description: Unique user identifier.
-        username:
-          type: string
-          description: Unique username.
-        email:
-          type: string
-          format: email
-          description: Unique email address.
-        role:
-          allOf:
-            - $ref: '#/components/schemas/Role'
+          $ref: '#/components/schemas/PostState'
+
     Post:
       type: object
       additionalProperties: false
-      required: [id, title, createdAt, updatedAt, userId, state]
+      required: [id, title, createdAt, updatedAt, userId, state, imageKey]
       properties:
         id:
           type: integer
@@ -714,12 +1259,7 @@ components:
           description: Optional post description.
         imageKey:
           type: string
-          nullable: true
           description: Object key of the post image stored in cloud storage.
-        imageUrl:
-          type: string
-          nullable: true
-          description: Public URL to access the post cover image.
         createdAt:
           type: string
           format: date-time
@@ -734,16 +1274,73 @@ components:
           description: Identifier of the authoring user.
         state:
           $ref: '#/components/schemas/PostState'
-    PostWithCommentsResponse:
+
+    PostWithDetails:
       allOf:
         - $ref: '#/components/schemas/Post'
         - type: object
+          required: [imageUrl, likesCount, isLiked]
+          properties:
+            imageUrl:
+              type: string
+              description: Public URL to access the post cover image.
+            likesCount:
+              type: integer
+              description: Total number of likes on the post.
+            isLiked:
+              type: boolean
+              description: Whether the authenticated user has liked this post.
+
+    PostWithCommentsResponse:
+      allOf:
+        - $ref: '#/components/schemas/PostWithDetails'
+        - type: object
+          required: [comments]
           properties:
             comments:
               type: array
               description: Latest comments attached to the post (up to 10).
               items:
                 $ref: '#/components/schemas/Comment'
+
+    PostsListResponse:
+      type: object
+      additionalProperties: false
+      required: [data, totalCount, currentPage, pageSize]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PostWithDetails'
+        totalCount:
+          type: integer
+          description: Total number of posts matching the filter criteria.
+        currentPage:
+          type: integer
+          description: Current page number.
+        pageSize:
+          type: integer
+          description: Number of posts per page.
+
+    CreateCommentRequest:
+      type: object
+      additionalProperties: false
+      required: [content]
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 400
+          description: Comment text.
+
+    UpdateCommentRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        content:
+          type: string
+          description: Updated comment text.
+
     Comment:
       type: object
       additionalProperties: false
@@ -772,7 +1369,21 @@ components:
           type: integer
           format: int32
           description: Identifier of the parent post.
-    CommentUser:
+
+    CommentWithDetails:
+      allOf:
+        - $ref: '#/components/schemas/Comment'
+        - type: object
+          required: [likesCount, isLiked]
+          properties:
+            likesCount:
+              type: integer
+              description: Total number of likes on the comment.
+            isLiked:
+              type: boolean
+              description: Whether the authenticated user has liked this comment.
+
+    CommentAuthor:
       type: object
       additionalProperties: false
       required: [username]
@@ -780,32 +1391,16 @@ components:
         username:
           type: string
           description: Username of the comment author.
-    CommentWithUser:
+
+    CommentWithAuthorAndDetails:
       allOf:
-        - $ref: '#/components/schemas/Comment'
+        - $ref: '#/components/schemas/CommentWithDetails'
         - type: object
           required: [user]
           properties:
             user:
-              $ref: '#/components/schemas/CommentUser'
-    PostsListResponse:
-      type: object
-      additionalProperties: false
-      required: [data, totalCount, currentPage, pageSize]
-      properties:
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/Post'
-        totalCount:
-          type: integer
-          description: Total number of posts matching the filter criteria.
-        currentPage:
-          type: integer
-          description: Current page number.
-        pageSize:
-          type: integer
-          description: Number of posts per page.
+              $ref: '#/components/schemas/CommentAuthor'
+
     CommentsListResponse:
       type: object
       additionalProperties: false
@@ -814,7 +1409,7 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/CommentWithUser'
+            $ref: '#/components/schemas/CommentWithAuthorAndDetails'
         totalCount:
           type: integer
           description: Total number of comments for the post.
@@ -824,6 +1419,7 @@ components:
         pageSize:
           type: integer
           description: Number of comments per page.
+
     ErrorDetail:
       type: object
       additionalProperties: false
@@ -835,6 +1431,7 @@ components:
         path:
           type: string
           description: Field path that failed validation.
+
     ErrorResponse:
       type: object
       additionalProperties: false
@@ -848,64 +1445,3 @@ components:
           description: Validation errors when request validation fails.
           items:
             $ref: '#/components/schemas/ErrorDetail'
-
-  responses:
-    BadRequestResponse:
-      description: The request parameters or payload are invalid or missing required data.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
-          example:
-            message: File wasn't sent
-    UnauthorizedResponse:
-      description: Authentication failed or token is missing, invalid, or expired.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
-          example:
-            message: Invalid or expired token
-    ForbiddenResponse:
-      description: The authenticated user is not authorized to access or modify this resource.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
-          example:
-            message: 'Forbidden: Admin access required'
-    NotFoundResponse:
-      description: The requested resource was not found.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
-          example:
-            message: Post not found
-    ConflictResponse:
-      description: The request conflicts with an existing resource.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
-          example:
-            message: Username or email is already taken
-    ValidationErrorResponse:
-      description: The request parameters, query, body, or file failed validation.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
-          example:
-            message: Validation failed
-            errors:
-              - message: Title must be at least 5 characters
-                path: title
-    InternalServerErrorResponse:
-      description: An unexpected server error occurred.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
-          example:
-            message: Something went wrong!
