@@ -1,6 +1,6 @@
 # Blog API
 
-An Express + TypeScript REST API for blog content, posts, and comments. The project uses Prisma with PostgreSQL, JWT-based authentication, and role-based authorization for protected actions.
+An Express + TypeScript REST API for blog content, posts, comments, likes, and image uploads. The project uses Prisma with PostgreSQL, JWT-based authentication, and role-based authorization for protected actions.
 
 ## Swagger / OpenAPI
 
@@ -18,6 +18,8 @@ Use Swagger UI to explore endpoints, inspect request and response schemas, and t
 - Zod
 - JWT
 - bcrypt
+- Cloudflare R2 / AWS S3 SDK
+- Multer
 
 ## Getting Started
 
@@ -52,18 +54,28 @@ npm start
 
 Create a `.env` file at the project root with these values:
 
-| Variable       | Required | Description                                   |
-| -------------- | -------- | --------------------------------------------- |
-| `DATABASE_URL` | Yes      | PostgreSQL connection string used by Prisma.  |
-| `SECRET_KEY`   | Yes      | Secret used to sign and verify JWT tokens.    |
-| `PORT`         | No       | Port for the HTTP server. Defaults to `3000`. |
+| Variable                | Required | Description                                                                                        |
+| ----------------------- | -------- | -------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`          | Yes      | PostgreSQL connection string used by Prisma.                                                       |
+| `SECRET_KEY`            | Yes      | Secret used to sign and verify JWT tokens.                                                         |
+| `R2_ACCESS_KEY_ID`      | Yes      | Cloudflare R2 access key ID for object storage.                                                    |
+| `R2_SECRET_ACCESS_KEY`  | Yes      | Cloudflare R2 secret access key.                                                                   |
+| `R2_ACCOUNT_ID`         | Yes      | Cloudflare R2 account ID used for the S3 API endpoint.                                             |
+| `R2_PUBLIC_URL`         | Yes      | Public base URL for serving uploaded images from Cloudflare R2.                                    |
+| `PORT`                  | No       | Port for the HTTP server. Defaults to `3000`.                                                      |
+| `NODE_ENV`              | No       | Node environment (`development` or `production`). Used for secure cookies. Defaults to `development`. |
 
 Example:
 
 ```env
 DATABASE_URL="postgresql://user:password@localhost:5432/blog_api"
 SECRET_KEY="your-super-secret-key"
+R2_ACCESS_KEY_ID="your-r2-access-key-id"
+R2_SECRET_ACCESS_KEY="your-r2-secret-access-key"
+R2_ACCOUNT_ID="your-r2-account-id"
+R2_PUBLIC_URL="https://pub-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.r2.dev"
 PORT=3000
+NODE_ENV=development
 ```
 
 ## Available Scripts
@@ -83,6 +95,9 @@ The folders below are organized by responsibility:
 
 ```text
 .
+├── docs/
+│   ├── architecture.md
+│   └── database.md
 ├── prisma/
 │   ├── migrations/
 │   ├── schema.prisma
@@ -90,17 +105,16 @@ The folders below are organized by responsibility:
 ├── src/
 │   ├── app.ts
 │   ├── controllers/
-│   ├── db/
 │   ├── errors/
 │   ├── generated/
+│   ├── lib/
 │   ├── middleware/
 │   ├── routes/
+│   ├── services/
 │   ├── types/
+│   ├── utils/
 │   └── validation/
-├── docs/
-│   ├── api-endpoints.md
-│   ├── architecture.md
-│   └── database-models.md
+├── openapi.yaml
 ├── package.json
 └── README.md
 ```
