@@ -1,7 +1,11 @@
 import { HttpError } from '../errors/HttpError.js';
 import { prisma } from '../lib/prisma.js';
 
-export async function togglePostLike({ postId, userId }: { postId: number; userId: number }) {
+interface TogglePostLike {
+  postId: number;
+  userId: number;
+}
+export async function togglePostLike({ postId, userId }: TogglePostLike) {
   const post = await prisma.post.findUnique({
     where: {
       id: postId,
@@ -29,13 +33,11 @@ export async function togglePostLike({ postId, userId }: { postId: number; userI
   return true;
 }
 
-export async function toggleCommentLike({
-  commentId,
-  userId,
-}: {
+interface TogglePostLike {
   commentId: number;
   userId: number;
-}) {
+}
+export async function toggleCommentLike({ commentId, userId }: TogglePostLike) {
   const comment = await prisma.comment.findUnique({
     where: {
       id: commentId,
