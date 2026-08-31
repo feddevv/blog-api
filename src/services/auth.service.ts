@@ -4,8 +4,9 @@ import { prisma } from '../lib/prisma.js';
 import jwt from 'jsonwebtoken';
 import { deleteRefreshToken, setRefreshToken } from '../utils/cookies.js';
 import { Response } from 'express';
+import { LoginBody, RegisterBody } from '../validation/authSchemas.js';
 
-export async function registerUser(username: string, email: string, password: string) {
+export async function registerUser({ username, email, password }: RegisterBody) {
   const existingUser = await prisma.user.findFirst({
     where: {
       OR: [{ username: username }, { email: email }],
@@ -27,7 +28,7 @@ export async function registerUser(username: string, email: string, password: st
   });
 }
 
-export async function loginUser(username: string, password: string, res: Response) {
+export async function loginUser({ username, password }: LoginBody, res: Response) {
   const secretKey = process.env.SECRET_KEY;
   if (!secretKey) {
     throw new Error('SECRET_KEY is not defined in environment variables');

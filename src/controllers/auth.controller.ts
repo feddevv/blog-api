@@ -9,7 +9,7 @@ export async function register(
 ) {
   const { username, email, password } = req.body;
 
-  await authService.registerUser(username, email, password);
+  await authService.registerUser({ username, email, password });
 
   res.status(201).json({ message: 'Created' });
 }
@@ -17,7 +17,7 @@ export async function register(
 export async function login(req: AuthenticatedRequest<unknown, unknown, LoginBody>, res: Response) {
   const { username, password } = req.body;
 
-  const accessToken = await authService.loginUser(username, password, res);
+  const accessToken = await authService.loginUser({ username, password }, res);
 
   res.json({ token: accessToken });
 }
