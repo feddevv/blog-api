@@ -1,19 +1,14 @@
 import { HttpError } from '../errors/HttpError.js';
 import { Prisma } from '../generated/prisma/client.js';
-import { Role } from '../generated/prisma/enums.js';
 import { prisma } from '../lib/prisma.js';
+import { AuthUser } from '../types/auth.types.js';
 import { FilterQueryOutput } from '../validation/postsSchemas.js';
 
-export async function getCommentById({
-  commentId,
-  user,
-}: {
+interface GetCommentByIdParams {
   commentId: number;
-  user?: {
-    id: number;
-    role: Role;
-  };
-}) {
+  user?: AuthUser;
+}
+export async function getCommentById({ commentId, user }: GetCommentByIdParams) {
   const comment = await prisma.comment.findFirst({
     where: {
       id: commentId,
@@ -45,10 +40,7 @@ export async function getCommentById({
 interface UpdateCommentParams {
   commentId: number;
   content?: string;
-  user?: {
-    id: number;
-    role: Role;
-  };
+  user?: AuthUser;
 }
 export async function updateComment({ commentId, content, user }: UpdateCommentParams) {
   const existingComment = await prisma.comment.findUnique({
@@ -77,13 +69,11 @@ export async function updateComment({ commentId, content, user }: UpdateCommentP
   return updatedComment;
 }
 
-export async function deleteComment({
-  commentId,
-  user,
-}: {
+interface DeleteCommentParams {
   commentId: number;
-  user?: { id: number; role: Role };
-}) {
+  user?: AuthUser;
+}
+export async function deleteComment({ commentId, user }: DeleteCommentParams) {
   const existing = await prisma.comment.findUnique({
     where: {
       id: Number(commentId),
@@ -106,10 +96,7 @@ export async function deleteComment({
 }
 
 interface GetPostCommentsParams extends Omit<FilterQueryOutput, 'state'> {
-  user?: {
-    id: number;
-    role: Role;
-  };
+  user?: AuthUser;
   postId: number;
 }
 export async function getPostComments({
@@ -185,15 +172,12 @@ export async function getPostComments({
   return { comments: mappedComments, commentsCount };
 }
 
-export async function createComment({
-  postId,
-  content,
-  user,
-}: {
+interface CreateCommentParams {
   postId: number;
   content: string;
-  user?: { id: number; role: Role };
-}) {
+  user?: AuthUser;
+}
+export async function createComment({ postId, content, user }: CreateCommentParams) {
   const post = await prisma.post.findUnique({
     where: {
       id: Number(postId),

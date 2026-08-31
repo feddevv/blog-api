@@ -1,5 +1,5 @@
 import { NextFunction, Response } from 'express';
-import { AuthenticatedRequest } from '../types/types.js';
+import { AuthenticatedRequest } from '../types/index.js';
 import { HttpError } from '../errors/HttpError.js';
 
 export function isAdmin(req: AuthenticatedRequest, res: Response, next: NextFunction) {

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { LoginBody, RegisterBody } from '../validation/authSchemas.js';
-import { AuthenticatedRequest } from '../types/types.js';
+import { AuthenticatedRequest } from '../types/index.js';
 import * as authService from '../services/auth.service.js';
 
 export async function register(

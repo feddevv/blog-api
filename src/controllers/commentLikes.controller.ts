@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import { AuthenticatedRequest } from '../types/types.js';
+import { AuthenticatedRequest } from '../types/index.js';
 import * as likesService from '../services/likes.service.js';
 import { CommentParams } from '../validation/commentsSchemas.js';
 

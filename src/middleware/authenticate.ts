@@ -1,5 +1,5 @@
 import { Response, NextFunction } from 'express';
-import { AuthenticatedRequest } from '../types/types.js';
+import { AuthenticatedRequest } from '../types/index.js';
 import { HttpError } from '../errors/HttpError.js';
 import { Role } from '../generated/prisma/enums.js';
 import jwt from 'jsonwebtoken';
