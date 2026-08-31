@@ -1,14 +1,14 @@
 import { Response } from 'express';
 import { AuthenticatedRequest } from '../types/types.js';
 import {
-  CommentsParams,
+  CommentParams,
   CreateCommentBody,
   UpdateCommentBody,
 } from '../validation/commentsSchemas.js';
 import { FilterQueryOutput, PostParams } from '../validation/postsSchemas.js';
 import * as commentsService from '../services/comments.service.js';
 
-export async function getCommentById(req: AuthenticatedRequest<CommentsParams>, res: Response) {
+export async function getCommentById(req: AuthenticatedRequest<CommentParams>, res: Response) {
   const { commentId } = req.params;
 
   const comment = await commentsService.getCommentById({
@@ -20,7 +20,7 @@ export async function getCommentById(req: AuthenticatedRequest<CommentsParams>, 
 }
 
 export async function updateComment(
-  req: AuthenticatedRequest<CommentsParams, unknown, UpdateCommentBody>,
+  req: AuthenticatedRequest<CommentParams, unknown, UpdateCommentBody>,
   res: Response,
 ) {
   const { commentId } = req.params;
@@ -35,7 +35,7 @@ export async function updateComment(
   res.json(updateComment);
 }
 
-export async function deleteComment(req: AuthenticatedRequest<CommentsParams>, res: Response) {
+export async function deleteComment(req: AuthenticatedRequest<CommentParams>, res: Response) {
   const { commentId } = req.params;
 
   await commentsService.deleteComment({ commentId: Number(commentId), user: req.user });

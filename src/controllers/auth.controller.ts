@@ -33,7 +33,7 @@ export async function me(req: AuthenticatedRequest, res: Response) {
 export async function refresh(req: Request, res: Response) {
   const refreshToken = req.cookies.refreshToken;
 
-  const newAccessToken = await authService. refreshAccessToken(refreshToken, res);
+  const newAccessToken = await authService.refreshAccessToken(refreshToken, res);
 
   res.json({ token: newAccessToken });
 }
