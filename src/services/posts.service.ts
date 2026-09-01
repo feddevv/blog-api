@@ -6,6 +6,7 @@ import { s3 } from '../lib/s3.js';
 import { CreatePostBody, FilterQueryOutput, UpdatePostBody } from '../validation/postsSchemas.js';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { AuthUser } from '../types/auth.types.js';
+import sharp from 'sharp';
 
 interface GetPostsParams extends FilterQueryOutput {
   user?: AuthUser;
@@ -53,11 +54,12 @@ export async function getPosts({ limit, page, search, state, user }: GetPostsPar
   ]);
 
   const mappedPosts = posts.map(({ _count, likes, ...post }) => {
-    const imageUrl = `${process.env.R2_PUBLIC_URL}/${post.imageKey}`;
+    const coverImageUrl = `${process.env.R2_PUBLIC_URL}/${post.coverImageKey}`;
+    const thumbnailUrl = `${process.env.R2_PUBLIC_URL}/${post.thumbnailKey}`;
     const likesCount = _count.likes;
     const isLiked = likes ? likes.length > 0 : false;
 
-    return { ...post, imageUrl, likesCount, isLiked };
+    return { ...post, coverImageUrl, thumbnailUrl, likesCount, isLiked };
   });
 
   return { posts: mappedPosts, postsCount };
@@ -106,11 +108,12 @@ export async function getPostById({ postId, user }: GetPostByIdParams) {
   }
 
   const { _count, likes, ...rest } = post;
-  const imageUrl = `${process.env.R2_PUBLIC_URL}/${post.imageKey}`;
+  const coverImageUrl = `${process.env.R2_PUBLIC_URL}/${post.coverImageKey}`;
+  const thumbnailUrl = `${process.env.R2_PUBLIC_URL}/${post.thumbnailKey}`;
   const likesCount = _count.likes;
   const isLiked = likes ? likes.length > 0 : false;
 
-  return { ...rest, imageUrl, likesCount, isLiked };
+  return { ...rest, coverImageUrl, thumbnailUrl, likesCount, isLiked };
 }
 
 interface CreatePostParams extends CreatePostBody {
@@ -135,11 +138,27 @@ export async function createPost({
 
   if (!file) throw new HttpError(400, "File wasn't sent");
 
-  const key = `posts/${crypto.randomUUID()}-${file.originalname}`;
+  const thumbnail = await sharp(file.buffer)
+    .resize({
+      width: 800,
+      height: 425,
+    })
+    .toFormat('webp')
+    .toBuffer();
+
+  const thumbnailKey = `posts/${crypto.randomUUID()}-${file.originalname.split('.')[0]}-thumb.webp`;
+  const coverImageKey = `posts/${crypto.randomUUID()}-${file.originalname.split('.')[0]}-cover.webp`;
   await s3.send(
     new PutObjectCommand({
       Bucket: 'blog-api-bucket',
-      Key: key,
+      Key: thumbnailKey,
+      Body: thumbnail,
+    }),
+  );
+  await s3.send(
+    new PutObjectCommand({
+      Bucket: 'blog-api-bucket',
+      Key: coverImageKey,
       Body: file.buffer,
     }),
   );
@@ -154,7 +173,8 @@ export async function createPost({
         state,
         userId,
         description,
-        imageKey: key,
+        coverImageKey,
+        thumbnailKey,
       },
     });
 
@@ -164,7 +184,13 @@ export async function createPost({
       await s3.send(
         new DeleteObjectCommand({
           Bucket: 'blog-api-bucket',
-          Key: key,
+          Key: coverImageKey,
+        }),
+      );
+      await s3.send(
+        new DeleteObjectCommand({
+          Bucket: 'blog-api-bucket',
+          Key: thumbnailKey,
         }),
       );
     } catch (deleteError) {
