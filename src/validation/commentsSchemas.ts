@@ -1,8 +1,8 @@
 import z from 'zod';
 import { createIdParamsSchema } from './utils.js';
 
-export const commentsParamsSchema = createIdParamsSchema('commentId');
-export type CommentsParams = z.infer<typeof commentsParamsSchema>;
+export const commentParamsSchema = createIdParamsSchema('commentId');
+export type CommentParams = z.infer<typeof commentParamsSchema>;
 
 export const updateCommentBodySchema = z.object({
   content: z.string('Not a string').optional(),

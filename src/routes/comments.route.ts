@@ -5,7 +5,7 @@ import {
   updateComment,
 } from '../controllers/comments.controller.js';
 import { validator } from '../validation/validator.js';
-import { commentsParamsSchema, updateCommentBodySchema } from '../validation/commentsSchemas.js';
+import { commentParamsSchema, updateCommentBodySchema } from '../validation/commentsSchemas.js';
 import { authenticate, optionalAuthenticate } from '../middleware/authenticate.js';
 import { router as commentLikesRouter } from './commentLikes.route.js';
 
@@ -14,18 +14,18 @@ const router = Router();
 router.get(
   '/:commentId',
   optionalAuthenticate,
-  validator({ params: commentsParamsSchema }),
+  validator({ params: commentParamsSchema }),
   getCommentById,
 );
 router.put(
   '/:commentId',
-  validator({ body: updateCommentBodySchema, params: commentsParamsSchema }),
+  validator({ body: updateCommentBodySchema, params: commentParamsSchema }),
   authenticate,
   updateComment,
 );
 router.delete(
   '/:commentId',
-  validator({ params: commentsParamsSchema }),
+  validator({ params: commentParamsSchema }),
   authenticate,
   deleteComment,
 );

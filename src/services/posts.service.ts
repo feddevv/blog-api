@@ -1,16 +1,14 @@
 import { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { HttpError } from '../errors/HttpError.js';
-import { Prisma, Role } from '../generated/prisma/client.js';
+import { Prisma } from '../generated/prisma/client.js';
 import { prisma } from '../lib/prisma.js';
 import { s3 } from '../lib/s3.js';
 import { CreatePostBody, FilterQueryOutput, UpdatePostBody } from '../validation/postsSchemas.js';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
+import { AuthUser } from '../types/auth.types.js';
 
 interface GetPostsParams extends FilterQueryOutput {
-  user?: {
-    id: number;
-    role: Role;
-  };
+  user?: AuthUser;
 }
 
 export async function getPosts({ limit, page, search, state, user }: GetPostsParams) {
@@ -65,7 +63,11 @@ export async function getPosts({ limit, page, search, state, user }: GetPostsPar
   return { posts: mappedPosts, postsCount };
 }
 
-export async function getPostById(postId: number, user?: { id: number; role: Role }) {
+interface GetPostByIdParams {
+  postId: number;
+  user?: AuthUser;
+}
+export async function getPostById({ postId, user }: GetPostByIdParams) {
   const post = await prisma.post.findUnique({
     where: {
       id: Number(postId),
@@ -113,7 +115,7 @@ export async function getPostById(postId: number, user?: { id: number; role: Rol
 
 interface CreatePostParams extends CreatePostBody {
   file?: Express.Multer.File;
-  user?: { id: number; role: Role };
+  user?: AuthUser;
 }
 export async function createPost({
   title,
@@ -227,7 +229,10 @@ export async function updatePost({ content, description, state, title, postId }:
   }
 }
 
-export async function deletePost({ postId }: { postId: number }) {
+interface DeletePostParams {
+  postId: number;
+}
+export async function deletePost({ postId }: DeletePostParams) {
   try {
     await prisma.post.delete({
       where: {

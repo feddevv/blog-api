@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { LoginBody, RegisterBody } from '../validation/authSchemas.js';
-import { AuthenticatedRequest } from '../types/types.js';
+import { AuthenticatedRequest } from '../types/index.js';
 import * as authService from '../services/auth.service.js';
 
 export async function register(
@@ -9,7 +9,7 @@ export async function register(
 ) {
   const { username, email, password } = req.body;
 
-  await authService.registerUser(username, email, password);
+  await authService.registerUser({ username, email, password });
 
   res.status(201).json({ message: 'Created' });
 }
@@ -17,7 +17,7 @@ export async function register(
 export async function login(req: AuthenticatedRequest<unknown, unknown, LoginBody>, res: Response) {
   const { username, password } = req.body;
 
-  const accessToken = await authService.loginUser(username, password, res);
+  const accessToken = await authService.loginUser({ username, password }, res);
 
   res.json({ token: accessToken });
 }
@@ -33,7 +33,7 @@ export async function me(req: AuthenticatedRequest, res: Response) {
 export async function refresh(req: Request, res: Response) {
   const refreshToken = req.cookies.refreshToken;
 
-  const newAccessToken = await authService. refreshAccessToken(refreshToken, res);
+  const newAccessToken = await authService.refreshAccessToken(refreshToken, res);
 
   res.json({ token: newAccessToken });
 }
