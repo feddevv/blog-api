@@ -20,6 +20,7 @@ Use Swagger UI to explore endpoints, inspect request and response schemas, and t
 - bcrypt
 - Cloudflare R2 / AWS S3 SDK
 - Multer
+- Sharp
 
 ## Getting Started
 

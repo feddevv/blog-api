@@ -44,7 +44,8 @@ erDiagram
         string description "VarChar(300), nullable"
         datetime createdAt "default: now()"
         datetime updatedAt "auto-update"
-        string imageKey "R2/S3 object key"
+        string coverImageKey "R2/S3 object key"
+        string thumbnailKey "R2/S3 object key"
         int userId FK "references User(id)"
         PostState state "default: DRAFT"
     }
@@ -115,7 +116,8 @@ Represents blog articles and publication states with Cloudflare R2 / S3 image as
 | `description` | `String?` | `VARCHAR(300)` | **Yes** | `null` | — | Short excerpt / summary |
 | `createdAt` | `DateTime` | `TIMESTAMP(3)` | No | `now()` | — | Record creation timestamp |
 | `updatedAt` | `DateTime` | `TIMESTAMP(3)` | No | `@updatedAt` | — | Record last update timestamp |
-| `imageKey` | `String` | `TEXT` | No | — | — | Cloudflare R2 / S3 object key for the post cover image |
+| `coverImageKey` | `String` | `TEXT` | No | — | — | Cloudflare R2 / S3 object key for the post cover image |
+| `thumbnailKey` | `String` | `TEXT` | No | — | — | Cloudflare R2 / S3 object key for the post thumbnail image |
 | `userId` | `Int` | `INTEGER` | No | — | `FOREIGN KEY` | References `User(id)` on delete cascade |
 | `state` | `PostState` | `ENUM` | No | `'DRAFT'` | — | Publication status (`DRAFT`, `PUBLISHED`, `HIDDEN`) |
 
