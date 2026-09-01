@@ -184,6 +184,12 @@ export async function createPost({
       await s3.send(
         new DeleteObjectCommand({
           Bucket: 'blog-api-bucket',
+          Key: coverImageKey,
+        }),
+      );
+      await s3.send(
+        new DeleteObjectCommand({
+          Bucket: 'blog-api-bucket',
           Key: thumbnailKey,
         }),
       );
