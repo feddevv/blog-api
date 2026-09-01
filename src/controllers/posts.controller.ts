@@ -27,7 +27,7 @@ export async function getPosts(
 export async function getPostById(req: AuthenticatedRequest<PostParams>, res: Response) {
   const { postId } = req.params;
 
-  const post = await postsService.getPostById(Number(postId), req.user);
+  const post = await postsService.getPostById({ postId: Number(postId), user: req.user });
 
   res.json(post);
 }

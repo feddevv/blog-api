@@ -33,11 +33,11 @@ export async function togglePostLike({ postId, userId }: TogglePostLike) {
   return true;
 }
 
-interface TogglePostLike {
+interface ToggleCommentLike {
   commentId: number;
   userId: number;
 }
-export async function toggleCommentLike({ commentId, userId }: TogglePostLike) {
+export async function toggleCommentLike({ commentId, userId }: ToggleCommentLike) {
   const comment = await prisma.comment.findUnique({
     where: {
       id: commentId,
