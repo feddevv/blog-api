@@ -150,20 +150,22 @@ export async function createPost({
 
     thumbnailKey = `posts/${crypto.randomUUID()}-${file.originalname.split('.')[0]}-thumb.webp`;
     coverImageKey = `posts/${crypto.randomUUID()}-${file.originalname.split('.')[0]}-cover.webp`;
-    await s3.send(
-      new PutObjectCommand({
-        Bucket: 'blog-api-bucket',
-        Key: thumbnailKey,
-        Body: thumbnail,
-      }),
-    );
-    await s3.send(
-      new PutObjectCommand({
-        Bucket: 'blog-api-bucket',
-        Key: coverImageKey,
-        Body: file.buffer,
-      }),
-    );
+    await Promise.all([
+      s3.send(
+        new PutObjectCommand({
+          Bucket: 'blog-api-bucket',
+          Key: thumbnailKey,
+          Body: thumbnail,
+        }),
+      ),
+      s3.send(
+        new PutObjectCommand({
+          Bucket: 'blog-api-bucket',
+          Key: coverImageKey,
+          Body: file.buffer,
+        }),
+      ),
+    ]);
   }
 
   const userId = user!.id;
