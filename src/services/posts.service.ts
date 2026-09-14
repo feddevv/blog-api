@@ -260,11 +260,30 @@ interface DeletePostParams {
 }
 export async function deletePost({ postId }: DeletePostParams) {
   try {
-    await prisma.post.delete({
+    const deleted = await prisma.post.delete({
       where: {
         id: Number(postId),
       },
+      select: {
+        coverImageKey: true,
+        thumbnailKey: true,
+      },
     });
+
+    await Promise.all([
+      await s3.send(
+        new DeleteObjectCommand({
+          Bucket: 'blog-api-bucket',
+          Key: deleted.coverImageKey,
+        }),
+      ),
+      await s3.send(
+        new DeleteObjectCommand({
+          Bucket: 'blog-api-bucket',
+          Key: deleted.thumbnailKey,
+        }),
+      ),
+    ]);
   } catch (err) {
     if (err instanceof PrismaClientKnownRequestError && err.code === 'P2025') {
       throw new HttpError(404, 'Post not found');
