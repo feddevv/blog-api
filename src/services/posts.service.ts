@@ -207,9 +207,17 @@ export async function createPost({
 }
 
 interface UpdatePostParams extends UpdatePostBody {
+  file?: Express.Multer.File;
   postId: number;
 }
-export async function updatePost({ content, description, state, title, postId }: UpdatePostParams) {
+export async function updatePost({
+  content,
+  description,
+  state,
+  title,
+  postId,
+  file,
+}: UpdatePostParams) {
   const post = await prisma.post.findUnique({
     where: {
       id: postId,
@@ -235,8 +243,46 @@ export async function updatePost({ content, description, state, title, postId }:
     if (!finalDescription) {
       throw new HttpError(422, 'Description is required for publishing posts');
     }
+
+    if (!file) {
+      throw new HttpError(422, 'Image is required for publishing posts');
+    }
   }
 
+  let thumbnailKey: string | null = null;
+  let coverImageKey: string | null = null;
+
+  if (file) {
+    const thumbnail = await sharp(file.buffer)
+      .resize({
+        width: 800,
+        height: 425,
+      })
+      .toFormat('webp')
+      .toBuffer();
+
+    thumbnailKey =
+      post.thumbnailKey ||
+      `posts/${crypto.randomUUID()}-${file.originalname.split('.')[0]}-thumb.webp`;
+    coverImageKey = `posts/${crypto.randomUUID()}-${file.originalname.split('.')[0]}-cover.webp`;
+
+    await Promise.all([
+      s3.send(
+        new PutObjectCommand({
+          Bucket: 'blog-api-bucket',
+          Key: thumbnailKey,
+          Body: thumbnail,
+        }),
+      ),
+      s3.send(
+        new PutObjectCommand({
+          Bucket: 'blog-api-bucket',
+          Key: coverImageKey,
+          Body: file.buffer,
+        }),
+      ),
+    ]);
+  }
   try {
     const updatedPost = await prisma.post.update({
       where: {
@@ -247,6 +293,7 @@ export async function updatePost({ content, description, state, title, postId }:
         content,
         state,
         description,
+        ...(file && { thumbnailKey, coverImageKey }),
       },
     });
 
