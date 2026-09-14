@@ -54,8 +54,9 @@ export async function getPosts({ limit, page, search, state, user }: GetPostsPar
   ]);
 
   const mappedPosts = posts.map(({ _count, likes, ...post }) => {
-    const coverImageUrl = `${process.env.R2_PUBLIC_URL}/${post.coverImageKey}`;
-    const thumbnailUrl = `${process.env.R2_PUBLIC_URL}/${post.thumbnailKey}`;
+    const coverImageUrl =
+      post.coverImageKey && `${process.env.R2_PUBLIC_URL}/${post.coverImageKey}`;
+    const thumbnailUrl = post.thumbnailKey && `${process.env.R2_PUBLIC_URL}/${post.thumbnailKey}`;
     const likesCount = _count.likes;
     const isLiked = likes ? likes.length > 0 : false;
 
@@ -136,32 +137,34 @@ export async function createPost({
     }
   }
 
-  if (!file) throw new HttpError(400, "File wasn't sent");
+  let thumbnailKey: string | null = null;
+  let coverImageKey: string | null = null;
+  if (file) {
+    const thumbnail = await sharp(file.buffer)
+      .resize({
+        width: 800,
+        height: 425,
+      })
+      .toFormat('webp')
+      .toBuffer();
 
-  const thumbnail = await sharp(file.buffer)
-    .resize({
-      width: 800,
-      height: 425,
-    })
-    .toFormat('webp')
-    .toBuffer();
-
-  const thumbnailKey = `posts/${crypto.randomUUID()}-${file.originalname.split('.')[0]}-thumb.webp`;
-  const coverImageKey = `posts/${crypto.randomUUID()}-${file.originalname.split('.')[0]}-cover.webp`;
-  await s3.send(
-    new PutObjectCommand({
-      Bucket: 'blog-api-bucket',
-      Key: thumbnailKey,
-      Body: thumbnail,
-    }),
-  );
-  await s3.send(
-    new PutObjectCommand({
-      Bucket: 'blog-api-bucket',
-      Key: coverImageKey,
-      Body: file.buffer,
-    }),
-  );
+    thumbnailKey = `posts/${crypto.randomUUID()}-${file.originalname.split('.')[0]}-thumb.webp`;
+    coverImageKey = `posts/${crypto.randomUUID()}-${file.originalname.split('.')[0]}-cover.webp`;
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: 'blog-api-bucket',
+        Key: thumbnailKey,
+        Body: thumbnail,
+      }),
+    );
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: 'blog-api-bucket',
+        Key: coverImageKey,
+        Body: file.buffer,
+      }),
+    );
+  }
 
   const userId = user!.id;
 
@@ -180,21 +183,23 @@ export async function createPost({
 
     return post;
   } catch (err) {
-    try {
-      await s3.send(
-        new DeleteObjectCommand({
-          Bucket: 'blog-api-bucket',
-          Key: coverImageKey,
-        }),
-      );
-      await s3.send(
-        new DeleteObjectCommand({
-          Bucket: 'blog-api-bucket',
-          Key: thumbnailKey,
-        }),
-      );
-    } catch (deleteError) {
-      console.error('Unable to delete from the bucket', deleteError);
+    if (thumbnailKey && coverImageKey) {
+      try {
+        await s3.send(
+          new DeleteObjectCommand({
+            Bucket: 'blog-api-bucket',
+            Key: coverImageKey,
+          }),
+        );
+        await s3.send(
+          new DeleteObjectCommand({
+            Bucket: 'blog-api-bucket',
+            Key: thumbnailKey,
+          }),
+        );
+      } catch (deleteError) {
+        console.error('Unable to delete from the bucket', deleteError);
+      }
     }
 
     throw err;
@@ -270,20 +275,22 @@ export async function deletePost({ postId }: DeletePostParams) {
       },
     });
 
-    await Promise.all([
-      await s3.send(
-        new DeleteObjectCommand({
-          Bucket: 'blog-api-bucket',
-          Key: deleted.coverImageKey,
-        }),
-      ),
-      await s3.send(
-        new DeleteObjectCommand({
-          Bucket: 'blog-api-bucket',
-          Key: deleted.thumbnailKey,
-        }),
-      ),
-    ]);
+    if (deleted.coverImageKey && deleted.thumbnailKey) {
+      await Promise.all([
+        await s3.send(
+          new DeleteObjectCommand({
+            Bucket: 'blog-api-bucket',
+            Key: deleted.coverImageKey,
+          }),
+        ),
+        await s3.send(
+          new DeleteObjectCommand({
+            Bucket: 'blog-api-bucket',
+            Key: deleted.thumbnailKey,
+          }),
+        ),
+      ]);
+    }
   } catch (err) {
     if (err instanceof PrismaClientKnownRequestError && err.code === 'P2025') {
       throw new HttpError(404, 'Post not found');
