@@ -168,15 +168,13 @@ export async function createPost({
     ]);
   }
 
-  const userId = user!.id;
-
   try {
     const post = await prisma.post.create({
       data: {
         title,
         content,
         state,
-        userId,
+        userId: user!.id,
         description,
         coverImageKey,
         thumbnailKey,
