@@ -31,7 +31,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerJSON));
 // CORS
 app.use(
   cors({
-    origin: 'http://localhost:5173',
+    origin: 'https://blog-api-65st.onrender.com',
     credentials: true,
   }),
 );
