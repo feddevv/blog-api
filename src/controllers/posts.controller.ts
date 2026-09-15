@@ -50,7 +50,11 @@ export async function updatePost(
   const body = req.body;
   const { postId } = req.params;
 
-  const updatedPost = await postsService.updatePost({ ...body, postId: Number(postId) });
+  const updatedPost = await postsService.updatePost({
+    ...body,
+    postId: Number(postId),
+    file: req.file,
+  });
 
   res.json(updatedPost);
 }

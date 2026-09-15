@@ -36,7 +36,8 @@ router.post(
 );
 router.put(
   '/:postId',
-  validator({ body: updatePostBodySchema, params: postParamsSchema }),
+  upload.single('postImage'),
+  validator({ body: updatePostBodySchema, params: postParamsSchema, file: imageFileSchema }),
   authenticate,
   isEditor,
   updatePost,
