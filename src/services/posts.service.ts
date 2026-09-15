@@ -227,6 +227,12 @@ export async function updatePost({
   let coverImageKey: string | undefined;
 
   if (file) {
+    if (post.thumbnailKey && post.coverImageKey) {
+      await Promise.all([
+        mediaService.deleteImage('blog-api-bucket', post.thumbnailKey),
+        mediaService.deleteImage('blog-api-bucket', post.coverImageKey),
+      ]);
+    }
     const { thumbnailBuffer, coverImageBuffer } = await mediaService.processPostImages(file.buffer);
 
     const id = crypto.randomUUID();
