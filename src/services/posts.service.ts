@@ -1,12 +1,10 @@
-import { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { HttpError } from '../errors/HttpError.js';
 import { Prisma } from '../generated/prisma/client.js';
 import { prisma } from '../lib/prisma.js';
-import { s3 } from '../lib/s3.js';
 import { CreatePostBody, FilterQueryOutput, UpdatePostBody } from '../validation/postsSchemas.js';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { AuthUser } from '../types/auth.types.js';
-import sharp from 'sharp';
+import * as mediaService from './media.service.js';
 
 interface GetPostsParams extends FilterQueryOutput {
   user?: AuthUser;
@@ -140,31 +138,15 @@ export async function createPost({
   let thumbnailKey: string | null = null;
   let coverImageKey: string | null = null;
   if (file) {
-    const thumbnail = await sharp(file.buffer)
-      .resize({
-        width: 800,
-        height: 425,
-      })
-      .toFormat('webp')
-      .toBuffer();
+    const { thumbnailBuffer, coverImageBuffer } = await mediaService.processPostImages(file.buffer);
 
-    thumbnailKey = `posts/${crypto.randomUUID()}-${file.originalname.split('.')[0]}-thumb.webp`;
-    coverImageKey = `posts/${crypto.randomUUID()}-${file.originalname.split('.')[0]}-cover.webp`;
+    const id = crypto.randomUUID();
+    thumbnailKey = `posts/${id}-thumb.webp`;
+    coverImageKey = `posts/${id}-cover.webp`;
+
     await Promise.all([
-      s3.send(
-        new PutObjectCommand({
-          Bucket: 'blog-api-bucket',
-          Key: thumbnailKey,
-          Body: thumbnail,
-        }),
-      ),
-      s3.send(
-        new PutObjectCommand({
-          Bucket: 'blog-api-bucket',
-          Key: coverImageKey,
-          Body: file.buffer,
-        }),
-      ),
+      mediaService.uploadImage('blog-api-bucket', thumbnailKey, thumbnailBuffer),
+      mediaService.uploadImage('blog-api-bucket', coverImageKey, coverImageBuffer),
     ]);
   }
 
@@ -185,18 +167,10 @@ export async function createPost({
   } catch (err) {
     if (thumbnailKey && coverImageKey) {
       try {
-        await s3.send(
-          new DeleteObjectCommand({
-            Bucket: 'blog-api-bucket',
-            Key: coverImageKey,
-          }),
-        );
-        await s3.send(
-          new DeleteObjectCommand({
-            Bucket: 'blog-api-bucket',
-            Key: thumbnailKey,
-          }),
-        );
+        await Promise.all([
+          mediaService.deleteImage('blog-api-bucket', thumbnailKey),
+          mediaService.deleteImage('blog-api-bucket', coverImageKey),
+        ]);
       } catch (deleteError) {
         console.error('Unable to delete from the bucket', deleteError);
       }
@@ -249,40 +223,22 @@ export async function updatePost({
     }
   }
 
-  let thumbnailKey: string | null = null;
-  let coverImageKey: string | null = null;
+  let thumbnailKey: string | undefined;
+  let coverImageKey: string | undefined;
 
   if (file) {
-    const thumbnail = await sharp(file.buffer)
-      .resize({
-        width: 800,
-        height: 425,
-      })
-      .toFormat('webp')
-      .toBuffer();
+    const { thumbnailBuffer, coverImageBuffer } = await mediaService.processPostImages(file.buffer);
 
-    thumbnailKey =
-      post.thumbnailKey ||
-      `posts/${crypto.randomUUID()}-${file.originalname.split('.')[0]}-thumb.webp`;
-    coverImageKey = post.coverImageKey || `posts/${crypto.randomUUID()}-${file.originalname.split('.')[0]}-cover.webp`;
+    const id = crypto.randomUUID();
+    thumbnailKey = `posts/${id}-thumb.webp`;
+    coverImageKey = `posts/${id}-cover.webp`;
 
     await Promise.all([
-      s3.send(
-        new PutObjectCommand({
-          Bucket: 'blog-api-bucket',
-          Key: thumbnailKey,
-          Body: thumbnail,
-        }),
-      ),
-      s3.send(
-        new PutObjectCommand({
-          Bucket: 'blog-api-bucket',
-          Key: coverImageKey,
-          Body: file.buffer,
-        }),
-      ),
+      mediaService.uploadImage('blog-api-bucket', thumbnailKey, thumbnailBuffer),
+      mediaService.uploadImage('blog-api-bucket', coverImageKey, coverImageBuffer),
     ]);
   }
+
   try {
     const updatedPost = await prisma.post.update({
       where: {
@@ -293,7 +249,8 @@ export async function updatePost({
         content,
         state,
         description,
-        ...(file && { thumbnailKey, coverImageKey }),
+        thumbnailKey,
+        coverImageKey,
       },
     });
 
@@ -324,18 +281,8 @@ export async function deletePost({ postId }: DeletePostParams) {
 
     if (deleted.coverImageKey && deleted.thumbnailKey) {
       await Promise.all([
-        await s3.send(
-          new DeleteObjectCommand({
-            Bucket: 'blog-api-bucket',
-            Key: deleted.coverImageKey,
-          }),
-        ),
-        await s3.send(
-          new DeleteObjectCommand({
-            Bucket: 'blog-api-bucket',
-            Key: deleted.thumbnailKey,
-          }),
-        ),
+        mediaService.deleteImage('blog-api-bucket', deleted.thumbnailKey),
+        mediaService.deleteImage('blog-api-bucket', deleted.coverImageKey),
       ]);
     }
   } catch (err) {
