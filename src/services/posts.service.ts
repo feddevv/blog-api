@@ -264,7 +264,7 @@ export async function updatePost({
     thumbnailKey =
       post.thumbnailKey ||
       `posts/${crypto.randomUUID()}-${file.originalname.split('.')[0]}-thumb.webp`;
-    coverImageKey = `posts/${crypto.randomUUID()}-${file.originalname.split('.')[0]}-cover.webp`;
+    coverImageKey = post.coverImageKey || `posts/${crypto.randomUUID()}-${file.originalname.split('.')[0]}-cover.webp`;
 
     await Promise.all([
       s3.send(
