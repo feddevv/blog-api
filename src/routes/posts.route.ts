@@ -11,6 +11,7 @@ import {
   createPostBodySchema,
   filterPostsQuerySchema,
   imageFileSchema,
+  optionalImageFileSchema,
   postParamsSchema,
   updatePostBodySchema,
 } from '../validation/postsSchemas.js';
@@ -37,7 +38,11 @@ router.post(
 router.put(
   '/:postId',
   upload.single('postImage'),
-  validator({ body: updatePostBodySchema, params: postParamsSchema, file: imageFileSchema }),
+  validator({
+    body: updatePostBodySchema,
+    params: postParamsSchema,
+    file: optionalImageFileSchema,
+  }),
   authenticate,
   isEditor,
   updatePost,
