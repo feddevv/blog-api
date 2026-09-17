@@ -217,10 +217,6 @@ export async function updatePost({
     if (!finalDescription) {
       throw new HttpError(422, 'Description is required for publishing posts');
     }
-
-    if (!file) {
-      throw new HttpError(422, 'Image is required for publishing posts');
-    }
   }
 
   let thumbnailKey: string | undefined;
