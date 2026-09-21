@@ -30,8 +30,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerJSON));
 
 // CORS
 const allowedOrigins = [
-  'https://blog-client-git-main-nasruls-projects-60f61b8e.vercel.app/',
-  'https://blog-client-ipiiov36g-nasruls-projects-60f61b8e.vercel.app/',
+  'https://blog-client-git-main-nasruls-projects-60f61b8e.vercel.app',
+  'https://blog-client-ipiiov36g-nasruls-projects-60f61b8e.vercel.app',
 ];
 app.use(
   cors({
