@@ -29,9 +29,19 @@ const swaggerJSON = YAML.load('openapi.yaml');
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerJSON));
 
 // CORS
+const allowedOrigins = [
+  'https://blog-client-git-main-nasruls-projects-60f61b8e.vercel.app/',
+  'https://blog-client-ipiiov36g-nasruls-projects-60f61b8e.vercel.app/',
+];
 app.use(
   cors({
-    origin: 'https://blog-client-ipiiov36g-nasruls-projects-60f61b8e.vercel.app',
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+
+      if (!allowedOrigins.includes(origin)) return callback(new Error('Not allowed by CORS'));
+
+      return callback(null, true);
+    },
     credentials: true,
   }),
 );
