@@ -31,7 +31,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerJSON));
 // CORS
 app.use(
   cors({
-    origin: 'https://blog-client-seven-mu.vercel.app/',
+    origin: 'https://blog-client-ipiiov36g-nasruls-projects-60f61b8e.vercel.app/',
     credentials: true,
   }),
 );
