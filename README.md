@@ -106,15 +106,47 @@ The folders below are organized by responsibility:
 ├── src/
 │   ├── app.ts
 │   ├── controllers/
+│   │   ├── auth.controller.ts
+│   │   ├── commentLikes.controller.ts
+│   │   ├── comments.controller.ts
+│   │   ├── postLikes.controller.ts
+│   │   └── posts.controller.ts
 │   ├── errors/
+│   │   └── HttpError.ts
 │   ├── generated/
+│   │   └── prisma/
 │   ├── lib/
+│   │   ├── prisma.ts
+│   │   └── s3.ts
 │   ├── middleware/
+│   │   ├── authenticate.ts
+│   │   ├── checkRoles.ts
+│   │   └── error.ts
 │   ├── routes/
+│   │   ├── auth.route.ts
+│   │   ├── commentLikes.route.ts
+│   │   ├── comments.route.ts
+│   │   ├── nestedComments.route.ts
+│   │   ├── postLikes.route.ts
+│   │   └── posts.route.ts
 │   ├── services/
+│   │   ├── auth.service.ts
+│   │   ├── comments.service.ts
+│   │   ├── likes.service.ts
+│   │   ├── media.service.ts
+│   │   └── posts.service.ts
 │   ├── types/
+│   │   ├── auth.types.ts
+│   │   ├── express.types.ts
+│   │   └── index.ts
 │   ├── utils/
+│   │   └── cookies.ts
 │   └── validation/
+│       ├── authSchemas.ts
+│       ├── commentsSchemas.ts
+│       ├── postsSchemas.ts
+│       ├── utils.ts
+│       └── validator.ts
 ├── openapi.yaml
 ├── package.json
 └── README.md
