@@ -363,7 +363,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
-                message: File wasn't sent
+                message: Content is required for publishing posts
         '401':
           description: Authentication failed or token is missing, invalid, or expired.
           content:
@@ -472,9 +472,10 @@ paths:
       tags: [Posts]
       summary: Update a post
       description: >-
-        Updates post fields. If updating to PUBLISHED or HIDDEN (or updating an
-        already published/hidden post), content and description must not be empty.
-        Restricted to users with the ADMIN or EDITOR role.
+        Updates post fields and optionally replaces the cover image. If
+        updating to PUBLISHED or HIDDEN (or updating an already published/hidden
+        post), content and description must not be empty. Restricted to users
+        with the ADMIN or EDITOR role.
       security:
         - bearerAuth: []
       parameters:
@@ -488,6 +489,9 @@ paths:
       requestBody:
         required: true
         content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UpdatePostRequest'
           application/json:
             schema:
               $ref: '#/components/schemas/UpdatePostRequest'
@@ -1220,7 +1224,6 @@ components:
 
     UpdatePostRequest:
       type: object
-      additionalProperties: false
       properties:
         title:
           type: string
@@ -1236,6 +1239,10 @@ components:
           description: Updated post content. Required when publishing.
         state:
           $ref: '#/components/schemas/PostState'
+        postImage:
+          type: string
+          format: binary
+          description: Optional post cover image file (JPEG, PNG, or WEBP, max 5 MB).
 
     Post:
       type: object
@@ -1259,9 +1266,11 @@ components:
           description: Optional post description.
         coverImageKey:
           type: string
+          nullable: true
           description: Object key of the post cover image stored in cloud storage.
         thumbnailKey:
           type: string
+          nullable: true
           description: Object key of the post thumbnail image stored in cloud storage.
         createdAt:
           type: string
@@ -1286,9 +1295,11 @@ components:
           properties:
             coverImageUrl:
               type: string
+              nullable: true
               description: Public URL to access the post cover image.
             thumbnailUrl:
               type: string
+              nullable: true
               description: Public URL to access the post thumbnail image.
             likesCount:
               type: integer
