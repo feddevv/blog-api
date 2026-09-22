@@ -8,7 +8,7 @@ flowchart TD
 
     subgraph AppServer ["Express Application Server"]
         App["src/app.ts (Global Middleware & Routing)"]
-        
+
         subgraph MiddlewareLayer ["Middleware Layer"]
             Cors["cors / cookie-parser / express.json"]
             Val["Zod Validation (validator)"]
@@ -66,63 +66,77 @@ flowchart TD
 
 ## Tech Stack
 
-| Domain | Technology / Library | Role & Purpose |
-| --- | --- | --- |
-| **Runtime & Language** | Node.js (ESM), TypeScript | Execution runtime and static type checking |
-| **Web Framework** | Express 5 | HTTP server, middleware chaining, and route handling |
-| **Database & ORM** | PostgreSQL, Prisma ORM (`@prisma/client`, `@prisma/adapter-pg`) | Relational persistence, migrations, and type-safe query building |
-| **Object Storage** | Cloudflare R2, AWS SDK v3 (`@aws-sdk/client-s3`) | S3-compatible cloud object storage for post hero images |
-| **File Handling** | Multer (`multer`) | `multipart/form-data` parsing and in-memory buffer handling |
-| **Validation** | Zod | Runtime schema validation for request params, query, body, and files |
-| **Auth & Security** | JWT (`jsonwebtoken`), `bcrypt`, `cookie-parser`, `cors` | Token-based authentication, password hashing, HttpOnly cookie sessions, and CORS policy |
-| **API Documentation** | OpenAPI 3.0, Swagger UI (`swagger-ui-express`, `yamljs`) | Interactive API documentation hosted at `/api-docs` |
+| Domain                 | Technology / Library                                            | Role & Purpose                                                                          |
+| ---------------------- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| **Runtime & Language** | Node.js (ESM), TypeScript                                       | Execution runtime and static type checking                                              |
+| **Web Framework**      | Express 5                                                       | HTTP server, middleware chaining, and route handling                                    |
+| **Database & ORM**     | PostgreSQL, Prisma ORM (`@prisma/client`, `@prisma/adapter-pg`) | Relational persistence, migrations, and type-safe query building                        |
+| **Object Storage**     | Cloudflare R2, AWS SDK v3 (`@aws-sdk/client-s3`)                | S3-compatible cloud object storage for post hero images                                 |
+| **File Handling**      | Multer (`multer`)                                               | `multipart/form-data` parsing and in-memory buffer handling                             |
+| **Validation**         | Zod                                                             | Runtime schema validation for request params, query, body, and files                    |
+| **Auth & Security**    | JWT (`jsonwebtoken`), `bcrypt`, `cookie-parser`, `cors`         | Token-based authentication, password hashing, HttpOnly cookie sessions, and CORS policy |
+| **API Documentation**  | OpenAPI 3.0, Swagger UI (`swagger-ui-express`, `yamljs`)        | Interactive API documentation hosted at `/api-docs`                                     |
 
 ---
 
 ## Directory Structure (`src/`)
 
 ```text
-src/
-├── app.ts
-├── controllers/
-│   ├── auth.controller.ts
-│   ├── commentLikes.controller.ts
-│   ├── comments.controller.ts
-│   ├── postLikes.controller.ts
-│   └── posts.controller.ts
-├── errors/
-│   └── HttpError.ts
-├── generated/
-│   └── prisma/
-├── lib/
-│   ├── prisma.ts
-│   └── s3.ts
-├── middleware/
-│   ├── authenticate.ts
-│   ├── checkRoles.ts
-│   └── error.ts
-├── routes/
-│   ├── auth.route.ts
-│   ├── commentLikes.route.ts
-│   ├── comments.route.ts
-│   ├── nestedComments.route.ts
-│   ├── postLikes.route.ts
-│   └── posts.route.ts
-├── services/
-│   ├── auth.service.ts
-│   ├── comments.service.ts
-│   ├── likes.service.ts
-│   └── posts.service.ts
-├── types/
-│   └── types.ts
-├── utils/
-│   └── cookies.ts
-└── validation/
-    ├── authSchemas.ts
-    ├── commentsSchemas.ts
-    ├── postsSchemas.ts
-    ├── utils.ts
-    └── validator.ts
+.
+├── docs/
+│   ├── architecture.md
+│   └── database.md
+├── prisma/
+│   ├── migrations/
+│   ├── schema.prisma
+│   └── seed.ts
+├── src/
+│   ├── app.ts
+│   ├── controllers/
+│   │   ├── auth.controller.ts
+│   │   ├── commentLikes.controller.ts
+│   │   ├── comments.controller.ts
+│   │   ├── postLikes.controller.ts
+│   │   └── posts.controller.ts
+│   ├── errors/
+│   │   └── HttpError.ts
+│   ├── generated/
+│   │   └── prisma/
+│   ├── lib/
+│   │   ├── prisma.ts
+│   │   └── s3.ts
+│   ├── middleware/
+│   │   ├── authenticate.ts
+│   │   ├── checkRoles.ts
+│   │   └── error.ts
+│   ├── routes/
+│   │   ├── auth.route.ts
+│   │   ├── commentLikes.route.ts
+│   │   ├── comments.route.ts
+│   │   ├── nestedComments.route.ts
+│   │   ├── postLikes.route.ts
+│   │   └── posts.route.ts
+│   ├── services/
+│   │   ├── auth.service.ts
+│   │   ├── comments.service.ts
+│   │   ├── likes.service.ts
+│   │   ├── media.service.ts
+│   │   └── posts.service.ts
+│   ├── types/
+│   │   ├── auth.types.ts
+│   │   ├── express.types.ts
+│   │   └── index.ts
+│   ├── utils/
+│   │   └── cookies.ts
+│   └── validation/
+│       ├── authSchemas.ts
+│       ├── commentsSchemas.ts
+│       ├── postsSchemas.ts
+│       ├── utils.ts
+│       └── validator.ts
+├── openapi.yaml
+├── package.json
+└── README.md
 ```
 
 ### Layer Responsibilities
@@ -185,14 +199,14 @@ The API implements a dual-token authentication model:
 
 Defined in `prisma/schema.prisma`:
 
-| Model | Purpose | Key Relations |
-| --- | --- | --- |
-| **`User`** | Stores credentials and authorization roles (`USER`, `EDITOR`, `ADMIN`). | Has many `Post`, `Comment`, `PostLike`, `CommentLike`, `RefreshToken`. |
-| **`Post`** | Blog posts with visibility state (`DRAFT`, `PUBLISHED`, `HIDDEN`) and R2 `imageKey`. | Belongs to `User`; has many `Comment`, `PostLike`. |
-| **`Comment`** | User comments attached to blog posts. | Belongs to `User` and `Post`; has many `CommentLike`. |
-| **`PostLike`** | Unique like toggle per `(postId, userId)` pair. | Belongs to `Post` and `User`. |
-| **`CommentLike`** | Unique like toggle per `(commentId, userId)` pair. | Belongs to `Comment` and `User`. |
-| **`RefreshToken`** | Stores active refresh tokens for session rotation and revocation. | Belongs to `User`. |
+| Model              | Purpose                                                                              | Key Relations                                                          |
+| ------------------ | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| **`User`**         | Stores credentials and authorization roles (`USER`, `EDITOR`, `ADMIN`).              | Has many `Post`, `Comment`, `PostLike`, `CommentLike`, `RefreshToken`. |
+| **`Post`**         | Blog posts with visibility state (`DRAFT`, `PUBLISHED`, `HIDDEN`) and R2 `imageKey`. | Belongs to `User`; has many `Comment`, `PostLike`.                     |
+| **`Comment`**      | User comments attached to blog posts.                                                | Belongs to `User` and `Post`; has many `CommentLike`.                  |
+| **`PostLike`**     | Unique like toggle per `(postId, userId)` pair.                                      | Belongs to `Post` and `User`.                                          |
+| **`CommentLike`**  | Unique like toggle per `(commentId, userId)` pair.                                   | Belongs to `Comment` and `User`.                                       |
+| **`RefreshToken`** | Stores active refresh tokens for session rotation and revocation.                    | Belongs to `User`.                                                     |
 
 ---
 
@@ -255,4 +269,3 @@ sequenceDiagram
     Svc-->>Ctrl: Post entity
     Ctrl-->>Client: 201 Created (Post JSON)
 ```
-
