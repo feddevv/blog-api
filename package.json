@@ -28,6 +28,7 @@
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
+    "@types/jest": "^30.0.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.2.0",
     "@types/node": "^26.1.1",
@@ -45,6 +46,7 @@
     "prettier": "^3.9.5",
     "prisma": "^7.8.0",
     "supertest": "^7.3.0",
+    "ts-jest": "^29.4.12",
     "tsx": "^4.23.1",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.64.0"

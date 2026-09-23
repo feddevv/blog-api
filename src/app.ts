@@ -13,7 +13,6 @@ import 'multer';
 const app = express();
 
 app.use(express.json());
-// TODO: MAKE req.query WRITABLE ONLY WHEN NEEDED
 app.use((req: Request, res: Response, next: NextFunction) => {
   Object.defineProperty(req, 'query', {
     ...Object.getOwnPropertyDescriptor(req, 'query'),
