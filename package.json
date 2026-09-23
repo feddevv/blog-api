@@ -20,7 +20,8 @@
     "start": "node dist/app.js",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
-    "format": "prettier --write \"src/**/*.ts\""
+    "format": "prettier --write \"src/**/*.ts\"",
+    "test": "npx jest"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
