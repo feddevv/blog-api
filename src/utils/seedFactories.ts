@@ -1,10 +1,26 @@
-import { User } from '../generated/prisma/client.js';
+import { Post, PostState, Role, User } from '../generated/prisma/client.js';
 
-export function createRandomUser(): Omit<User, 'id'> {
+export function createRandomUser(role: Role = 'USER'): Omit<User, 'id'> {
   return {
-    username: `user-${Date.now()}`,
-    email: `user-${Date.now()}@gmail.com`,
+    username: `user-${crypto.randomUUID()}`,
+    email: `email-${crypto.randomUUID()}@gmail.com`,
     password: crypto.randomUUID(),
-    role: 'USER',
+    role,
+  };
+}
+
+export function createRandomPost({
+  userId,
+  state = 'PUBLISHED',
+}: {
+  userId: number;
+  state?: PostState;
+}): Pick<Post, 'title' | 'description' | 'content' | 'state' | 'userId'> {
+  return {
+    title: `title-${crypto.randomUUID()}`,
+    description: `description-${crypto.randomUUID()}`,
+    content: `content-${crypto.randomUUID()}`,
+    state,
+    userId,
   };
 }
