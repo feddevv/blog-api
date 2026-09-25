@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { prisma } from '../lib/prisma.js';
 import { createRandomPost } from '../utils/seedFactories.js';
 import request from 'supertest';
@@ -9,6 +9,14 @@ const sampleImageBuffer = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
   'base64',
 );
+
+vi.mock('../lib/s3.ts', () => {
+  return {
+    s3: {
+      send: vi.fn(),
+    },
+  };
+});
 
 describe('Posts', () => {
   beforeEach(async () => {
