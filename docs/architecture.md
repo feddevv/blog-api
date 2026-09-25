@@ -7,6 +7,7 @@ flowchart TD
     Client(["HTTP Client / Frontend"])
 
     subgraph AppServer ["Express Application Server"]
+        Server["src/server.ts (HTTP Listener)"]
         App["src/app.ts (Global Middleware & Routing)"]
 
         subgraph MiddlewareLayer ["Middleware Layer"]
@@ -37,6 +38,7 @@ flowchart TD
             PostsSvc["posts.service.ts"]
             CommentsSvc["comments.service.ts"]
             LikesSvc["likes.service.ts"]
+            MediaSvc["media.service.ts"]
         end
 
         subgraph LibLayer ["Infrastructure & Data Access Layer"]
@@ -50,12 +52,13 @@ flowchart TD
         CloudflareR2[("Cloudflare R2 (S3-Compatible Object Storage)")]
     end
 
-    Client <--> App
+    Client <--> Server
+    Server --> App
     App --> Cors --> RoutesLayer
     RoutesLayer --> Val --> Auth --> Roles --> ControllerLayer
     ControllerLayer --> ServiceLayer
     ServiceLayer --> PrismaClientInstance --> PostgreSQL
-    ServiceLayer --> S3ClientInstance --> CloudflareR2
+    ServiceLayer --> MediaSvc --> S3ClientInstance --> CloudflareR2
     MiddlewareLayer -.-> Err
     ControllerLayer -.-> Err
     ServiceLayer -.-> Err
@@ -66,20 +69,22 @@ flowchart TD
 
 ## Tech Stack
 
-| Domain                 | Technology / Library                                            | Role & Purpose                                                                          |
-| ---------------------- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| **Runtime & Language** | Node.js (ESM), TypeScript                                       | Execution runtime and static type checking                                              |
-| **Web Framework**      | Express 5                                                       | HTTP server, middleware chaining, and route handling                                    |
-| **Database & ORM**     | PostgreSQL, Prisma ORM (`@prisma/client`, `@prisma/adapter-pg`) | Relational persistence, migrations, and type-safe query building                        |
-| **Object Storage**     | Cloudflare R2, AWS SDK v3 (`@aws-sdk/client-s3`)                | S3-compatible cloud object storage for post hero images                                 |
-| **File Handling**      | Multer (`multer`)                                               | `multipart/form-data` parsing and in-memory buffer handling                             |
-| **Validation**         | Zod                                                             | Runtime schema validation for request params, query, body, and files                    |
-| **Auth & Security**    | JWT (`jsonwebtoken`), `bcrypt`, `cookie-parser`, `cors`         | Token-based authentication, password hashing, HttpOnly cookie sessions, and CORS policy |
-| **API Documentation**  | OpenAPI 3.0, Swagger UI (`swagger-ui-express`, `yamljs`)        | Interactive API documentation hosted at `/api-docs`                                     |
+| Domain                         | Technology / Library                                                  | Role & Purpose                                                                              |
+| ------------------------------ | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| **Runtime & Language**         | Node.js (ESM), TypeScript                                             | Execution runtime and static type checking                                                  |
+| **Web Framework**              | Express 5 (`express`)                                                 | HTTP server, middleware chaining, and route handling                                        |
+| **Database & ORM**             | PostgreSQL, Prisma ORM (`@prisma/client`, `@prisma/adapter-pg`, `pg`) | Relational persistence, migrations, and type-safe query building                            |
+| **Object Storage**             | Cloudflare R2, AWS SDK v3 (`@aws-sdk/client-s3`)                      | S3-compatible cloud object storage for post hero and thumbnail images                       |
+| **Image Processing & Uploads** | Sharp (`sharp`), Multer (`multer`)                                    | `multipart/form-data` parsing, in-memory buffers, WebP conversion, and thumbnail generation |
+| **Validation**                 | Zod (`zod`)                                                           | Runtime schema validation for request params, query, body, and files                        |
+| **Auth & Security**            | JWT (`jsonwebtoken`), `bcrypt`, `cookie-parser`, `cors`               | Token-based authentication, password hashing, HttpOnly cookie sessions, and CORS policy     |
+| **Testing**                    | Vitest (`vitest`), Supertest (`supertest`)                            | Automated unit and integration testing suite                                                |
+| **API Documentation**          | OpenAPI 3.0, Swagger UI (`swagger-ui-express`, `yamljs`)              | Interactive API documentation hosted at `/api-docs`                                         |
+| **Tooling & Quality**          | ESLint, Prettier, tsx, nodemon                                        | Code linting, formatting, and live reload during development                                |
 
 ---
 
-## Directory Structure (`src/`)
+## Directory Structure
 
 ```text
 .
@@ -88,8 +93,7 @@ flowchart TD
 │   └── database.md
 ├── prisma/
 │   ├── migrations/
-│   ├── schema.prisma
-│   └── seed.ts
+│   └── schema.prisma
 ├── src/
 │   ├── app.ts
 │   ├── controllers/
@@ -116,33 +120,47 @@ flowchart TD
 │   │   ├── nestedComments.route.ts
 │   │   ├── postLikes.route.ts
 │   │   └── posts.route.ts
+│   ├── server.ts
 │   ├── services/
 │   │   ├── auth.service.ts
 │   │   ├── comments.service.ts
 │   │   ├── likes.service.ts
 │   │   ├── media.service.ts
 │   │   └── posts.service.ts
+│   ├── tests/
+│   │   ├── auth.test.ts
+│   │   ├── commentLikes.test.ts
+│   │   ├── comments.test.ts
+│   │   ├── postLikes.test.ts
+│   │   ├── posts.test.ts
+│   │   └── testUtils.ts
 │   ├── types/
 │   │   ├── auth.types.ts
 │   │   ├── express.types.ts
 │   │   └── index.ts
 │   ├── utils/
-│   │   └── cookies.ts
+│   │   ├── cookies.ts
+│   │   └── seedFactories.ts
 │   └── validation/
 │       ├── authSchemas.ts
 │       ├── commentsSchemas.ts
 │       ├── postsSchemas.ts
 │       ├── utils.ts
 │       └── validator.ts
+├── eslint.config.mjs
 ├── openapi.yaml
 ├── package.json
-└── README.md
+├── prisma.config.ts
+├── README.md
+├── tsconfig.json
+└── vitest.config.ts
 ```
 
 ### Layer Responsibilities
 
-1. **Entry Point (`src/app.ts`)**:
-   - Boots the Express application and attaches core top-level middlewares (`express.json()`, `cors`, `cookieParser()`, custom `req.query` descriptor).
+1. **Entry Point (`src/server.ts` & `src/app.ts`)**:
+   - `src/server.ts`: Starts the HTTP server listening on the configured `PORT`.
+   - `src/app.ts`: Boots the Express application and attaches core top-level middlewares (`express.json()`, `cors`, `cookieParser()`, custom `req.query` descriptor).
    - Mounts Swagger UI documentation (`/api-docs`).
    - Mounts top-level routers (`/api/auth`, `/api/posts`, `/api/comments`).
    - Registers the global error handler (`errorHandler`) as the final middleware.
@@ -167,15 +185,21 @@ flowchart TD
    - Houses all core business rules and domain logic.
    - Interacts with Prisma ORM (`prisma`) for database CRUD and transactions.
    - Handles password hashing (`bcrypt`), JWT token generation, and refresh token cookie synchronization (`utils/cookies.ts`).
+   - Handles media processing with Sharp (`media.service.ts`), generating WebP cover images and resized thumbnails (800x425).
    - Manages S3 / Cloudflare R2 uploads and cleanup (`PutObjectCommand`, `DeleteObjectCommand`).
    - Throws domain/operational `HttpError` instances when business constraints are violated.
 
 6. **Infrastructure & Shared Utilities (`src/lib/`, `src/utils/`, `src/errors/`, `src/types/`)**:
-   - `lib/prisma.ts`: Initializes `PrismaClient` with `@prisma/adapter-pg`.
+   - `lib/prisma.ts`: Initializes `PrismaClient` with `@prisma/adapter-pg`, switching between `DATABASE_URL` and `DATABASE_URL_TEST` based on `NODE_ENV`.
    - `lib/s3.ts`: Configures `S3Client` pointing to Cloudflare R2 endpoints.
    - `utils/cookies.ts`: Helper functions to set and clear secure `HttpOnly` refresh token cookies.
+   - `utils/seedFactories.ts`: Factory generators for fake users, posts, and comments in tests.
    - `errors/HttpError.ts`: Custom error class containing HTTP status codes.
-   - `types/types.ts`: Express `Request` type extensions (`AuthenticatedRequest`).
+   - `types/`: Express `Request` type extensions (`AuthenticatedRequest` in `express.types.ts`) and user auth types (`AuthUser` in `auth.types.ts`).
+
+7. **Testing Layer (`src/tests/`)**:
+   - Contains end-to-end integration tests using Vitest and Supertest across authentication, posts, comments, and likes.
+   - `testUtils.ts`: Provides helper functions for generating test tokens (`generateToken`) and seeding test entities (`createTestUser`, `createTestPost`).
 
 ---
 
@@ -199,14 +223,14 @@ The API implements a dual-token authentication model:
 
 Defined in `prisma/schema.prisma`:
 
-| Model              | Purpose                                                                              | Key Relations                                                          |
-| ------------------ | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
-| **`User`**         | Stores credentials and authorization roles (`USER`, `EDITOR`, `ADMIN`).              | Has many `Post`, `Comment`, `PostLike`, `CommentLike`, `RefreshToken`. |
-| **`Post`**         | Blog posts with visibility state (`DRAFT`, `PUBLISHED`, `HIDDEN`) and R2 `imageKey`. | Belongs to `User`; has many `Comment`, `PostLike`.                     |
-| **`Comment`**      | User comments attached to blog posts.                                                | Belongs to `User` and `Post`; has many `CommentLike`.                  |
-| **`PostLike`**     | Unique like toggle per `(postId, userId)` pair.                                      | Belongs to `Post` and `User`.                                          |
-| **`CommentLike`**  | Unique like toggle per `(commentId, userId)` pair.                                   | Belongs to `Comment` and `User`.                                       |
-| **`RefreshToken`** | Stores active refresh tokens for session rotation and revocation.                    | Belongs to `User`.                                                     |
+| Model              | Purpose                                                                                                 | Key Relations                                                          |
+| ------------------ | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| **`User`**         | Stores credentials and authorization roles (`USER`, `EDITOR`, `ADMIN`).                                 | Has many `Post`, `Comment`, `PostLike`, `CommentLike`, `RefreshToken`. |
+| **`Post`**         | Blog posts with visibility state (`DRAFT`, `PUBLISHED`, `HIDDEN`), `coverImageKey`, and `thumbnailKey`. | Belongs to `User`; has many `Comment`, `PostLike`.                     |
+| **`Comment`**      | User comments attached to blog posts.                                                                   | Belongs to `User` and `Post`; has many `CommentLike`.                  |
+| **`PostLike`**     | Unique like toggle per `(postId, userId)` pair.                                                         | Belongs to `Post` and `User`.                                          |
+| **`CommentLike`**  | Unique like toggle per `(commentId, userId)` pair.                                                      | Belongs to `Comment` and `User`.                                       |
+| **`RefreshToken`** | Stores active refresh tokens for session rotation and revocation.                                       | Belongs to `User`.                                                     |
 
 ---
 
@@ -225,6 +249,7 @@ sequenceDiagram
     participant Role as Role Guard (isAdmin)
     participant Ctrl as Posts Controller
     participant Svc as Posts Service
+    participant MediaSvc as Media Service (Sharp)
     participant S3 as Cloudflare R2 (S3)
     participant DB as Prisma (PostgreSQL)
     participant Err as Error Handler
@@ -251,21 +276,31 @@ sequenceDiagram
     end
     Role-->>Ctrl: createPost(req, res)
     Ctrl->>Svc: createPost({ title, content, description, file, user })
-    Svc->>S3: PutObjectCommand (Upload image buffer to R2)
-    alt S3 upload fails
-        S3-->>Svc: Error
-        Svc-->>Err: Propagate Error
-        Err-->>Client: 500 Internal Server Error
+    alt Image file provided
+        Svc->>MediaSvc: processPostImages(file.buffer)
+        MediaSvc-->>Svc: coverImageBuffer & thumbnailBuffer (WebP)
+        Svc->>MediaSvc: uploadImage(bucket, thumbnailKey, thumbnailBuffer)
+        MediaSvc->>S3: PutObjectCommand (Upload thumbnail)
+        Svc->>MediaSvc: uploadImage(bucket, coverImageKey, coverImageBuffer)
+        MediaSvc->>S3: PutObjectCommand (Upload cover image)
+        alt S3 upload fails
+            S3-->>MediaSvc: Error
+            MediaSvc-->>Svc: Error
+            Svc-->>Err: Propagate Error
+            Err-->>Client: 500 Internal Server Error
+        end
     end
-    S3-->>Svc: Upload success (imageKey)
     Svc->>DB: prisma.post.create(...)
     alt DB insert fails
         DB-->>Svc: Prisma Error
-        Svc->>S3: DeleteObjectCommand (Compensating rollback)
+        opt If images were uploaded
+            Svc->>MediaSvc: deleteImage(thumbnailKey & coverImageKey)
+            MediaSvc->>S3: DeleteObjectCommand (Compensating rollback)
+        end
         Svc-->>Err: Propagate Error
         Err-->>Client: Error response
     end
     DB-->>Svc: Created Post record
-    Svc-->>Ctrl: Post entity
+    Svc-->>Ctrl: Post entity (with coverImageUrl & thumbnailUrl)
     Ctrl-->>Client: 201 Created (Post JSON)
 ```
