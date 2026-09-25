@@ -32,6 +32,7 @@ const allowedOrigins = [
   'https://blog-client-seven-mu.vercel.app',
   'https://blog-client-git-main-nasruls-projects-60f61b8e.vercel.app',
   'https://blog-client-ipiiov36g-nasruls-projects-60f61b8e.vercel.app',
+  'http://localhost:5173',
 ];
 app.use(
   cors({
