@@ -1,29 +1,14 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { prisma } from '../lib/prisma.js';
-import { createRandomPost, createRandomUser } from '../utils/seedFactories.js';
+import { createRandomPost } from '../utils/seedFactories.js';
 import request from 'supertest';
 import { app } from '../app.js';
-import jwt from 'jsonwebtoken';
-import { Role } from '../generated/prisma/enums.js';
+import { createTestUser, generateToken } from './testUtils.js';
 
 const sampleImageBuffer = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
   'base64',
 );
-
-function generateToken(userId: number, role: Role = 'ADMIN'): string {
-  const secretKey = process.env.SECRET_KEY;
-  if (!secretKey) {
-    throw new Error('SECRET_KEY is not defined in environment variables');
-  }
-  return jwt.sign({ id: userId, role }, secretKey, { expiresIn: '15m' });
-}
-
-async function createTestUser(role: Role = 'USER') {
-  return prisma.user.create({
-    data: createRandomUser(role),
-  });
-}
 
 describe('Posts', () => {
   beforeEach(async () => {

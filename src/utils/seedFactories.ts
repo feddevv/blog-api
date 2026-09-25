@@ -1,4 +1,4 @@
-import { Post, PostState, Role, User } from '../generated/prisma/client.js';
+import { Comment, Post, PostState, Role, User } from '../generated/prisma/client.js';
 
 export function createRandomUser(role: Role = 'USER'): Omit<User, 'id'> {
   return {
@@ -22,5 +22,21 @@ export function createRandomPost({
     content: `content-${crypto.randomUUID()}`,
     state,
     userId,
+  };
+}
+
+export function createRandomComment({
+  userId,
+  postId,
+  content,
+}: {
+  userId: number;
+  postId: number;
+  content?: string;
+}): Pick<Comment, 'content' | 'userId' | 'postId'> {
+  return {
+    content: content ?? `comment-${crypto.randomUUID()}`,
+    userId,
+    postId,
   };
 }
