@@ -23,7 +23,7 @@ describe('Authentication', () => {
 
     it('should return an error when a user with this email already exists', async () => {
       const { email, password } = await prisma.user.create({
-        data: { ...createRandomUser() },
+        data: createRandomUser(),
       });
 
       const response = await request(app)
@@ -36,7 +36,7 @@ describe('Authentication', () => {
 
     it('should return an error when a user with this username already exists', async () => {
       const { username, password } = await prisma.user.create({
-        data: { ...createRandomUser() },
+        data: createRandomUser(),
       });
 
       const response = await request(app)
