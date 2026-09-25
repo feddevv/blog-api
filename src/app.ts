@@ -10,10 +10,9 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import 'multer';
 
-const app = express();
+export const app = express();
 
 app.use(express.json());
-// TODO: MAKE req.query WRITABLE ONLY WHEN NEEDED
 app.use((req: Request, res: Response, next: NextFunction) => {
   Object.defineProperty(req, 'query', {
     ...Object.getOwnPropertyDescriptor(req, 'query'),
@@ -55,13 +54,3 @@ app.use('/api/posts', postsRouter);
 app.use('/api/comments', commentsRouter);
 
 app.use(errorHandler);
-
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, (err) => {
-  if (err) {
-    console.log(err.message);
-  }
-
-  console.log(`Listening to PORT: ${PORT}`);
-});
