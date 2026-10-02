@@ -22,38 +22,66 @@ Use Swagger UI to explore endpoints, inspect request and response schemas, and t
 
 ## Getting Started
 
-1. Install dependencies:
+### Prerequisites
 
-```bash
-npm install
-```
+- [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/) installed.
 
-2. Create a `.env` file in the project root with the required environment variables (see [Environment Variables Configuration](#environment-variables-configuration)).
+### Running with Docker
 
-3. Run Prisma migrations and generate the client:
+1. **Clone the repository:**
 
-```bash
-npx prisma migrate dev
-```
+   ```bash
+   git clone https://github.com/feddevv/blog-api.git
+   cd blog-api
+   ```
 
-4. (Optional) Run test suite:
+2. **Configure environment variables:**
 
-```bash
-npm test
-```
+   Create a `.env` file in the project root with the required environment variables (see [Environment Variables Configuration](#environment-variables-configuration)). When running via Docker Compose, ensure `DATABASE_URL` references the PostgreSQL container service (`postgres_db`):
 
-5. Start the development server:
+   ```env
+   POSTGRES_USER=postgres
+   POSTGRES_PASSWORD=postgres
+   POSTGRES_DB=postgres_db
+   DB_PORT=5432
+   DATABASE_URL="postgresql://postgres:postgres@postgres_db:5432/postgres_db"
+   SECRET_KEY="your-super-secret-key"
+   R2_ACCESS_KEY_ID="your-r2-access-key-id"
+   R2_SECRET_ACCESS_KEY="your-r2-secret-access-key"
+   R2_ACCOUNT_ID="your-r2-account-id"
+   R2_PUBLIC_URL="https://pub-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.r2.dev"
+   PORT=3000
+   NODE_ENV=development
+   ```
 
-```bash
-npm run dev
-```
+3. **Build and start the containers:**
 
-6. Build and run the production version:
+   ```bash
+   docker compose up --build
+   ```
 
-```bash
-npm run build
-npm start
-```
+   This command will:
+   - Start the PostgreSQL container and wait for its healthcheck to pass.
+   - Build the API container.
+   - Automatically run database migrations (`npm run db:migrate`).
+   - Start the API server on `http://localhost:3000`.
+
+4. **Access the API & Swagger Documentation:**
+
+   - API Base URL: `http://localhost:3000`
+   - Swagger UI: `http://localhost:3000/api-docs`
+
+5. **Stop the containers:**
+
+   ```bash
+   docker compose down
+   ```
+
+   *(Optional)* To stop containers and remove the database volume:
+
+   ```bash
+   docker compose down -v
+   ```
 
 ## Environment Variables Configuration
 
@@ -61,7 +89,7 @@ Create a `.env` file at the project root with these values:
 
 | Variable               | Required | Description                                                                                                                              |
 | ---------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`         | Yes      | PostgreSQL connection string used by Prisma in development / production.                                                                 |
+| `DATABASE_URL`         | Yes      | PostgreSQL connection string used by Prisma (`postgresql://<user>:<password>@postgres_db:5432/<db>` when running in Docker).            |
 | `DATABASE_URL_TEST`    | Yes*     | PostgreSQL connection string used by Prisma when running tests (`*` required for running tests).                                         |
 | `SECRET_KEY`           | Yes      | Secret used to sign and verify JWT access and refresh tokens.                                                                            |
 | `R2_ACCESS_KEY_ID`     | Yes      | Cloudflare R2 access key ID for object storage.                                                                                         |
@@ -70,12 +98,20 @@ Create a `.env` file at the project root with these values:
 | `R2_PUBLIC_URL`        | Yes      | Public base URL for serving uploaded images and thumbnails from Cloudflare R2.                                                           |
 | `PORT`                 | No       | Port for the HTTP server. Defaults to `3000`.                                                                                            |
 | `NODE_ENV`             | No       | Node environment (`development`, `test`, or `production`). Used for database selection and secure cookies. Defaults to `development`. |
+| `POSTGRES_USER`        | No       | PostgreSQL username for Docker container. Defaults to `postgres`.                                                                       |
+| `POSTGRES_PASSWORD`    | No       | PostgreSQL password for Docker container. Defaults to `postgres`.                                                                       |
+| `POSTGRES_DB`          | No       | PostgreSQL database name for Docker container. Defaults to `postgres_db`.                                                               |
+| `DB_PORT`              | No       | Host port mapped to PostgreSQL in Docker. Defaults to `5432`.                                                                            |
 
 Example:
 
 ```env
-DATABASE_URL="postgresql://user:password@localhost:5432/blog_api"
-DATABASE_URL_TEST="postgresql://user:password@localhost:5432/blog_api_test"
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=postgres_db
+DB_PORT=5432
+DATABASE_URL="postgresql://postgres:postgres@postgres_db:5432/postgres_db"
+DATABASE_URL_TEST="postgresql://postgres:postgres@localhost:5432/blog_api_test"
 SECRET_KEY="your-super-secret-key"
 R2_ACCESS_KEY_ID="your-r2-access-key-id"
 R2_SECRET_ACCESS_KEY="your-r2-secret-access-key"
@@ -87,15 +123,16 @@ NODE_ENV=development
 
 ## Available Scripts
 
-| Script     | Command                                    | Description                                                |
-| ---------- | ------------------------------------------ | ---------------------------------------------------------- |
-| `dev`      | `nodemon --exec tsx src/server.ts`         | Start the API in development mode with automatic restarts. |
-| `build`    | `tsc`                                      | Compile TypeScript into `dist/`.                           |
-| `start`    | `node dist/server.js`                      | Run the compiled production build.                         |
-| `lint`     | `eslint src/**/*.ts`                       | Check source files with ESLint.                            |
-| `lint:fix` | `eslint src/**/*.ts --fix`                 | Automatically fix lint issues where possible.              |
-| `format`   | `prettier --write "src/**/*.ts"`           | Format source files with Prettier.                         |
-| `test`     | `vitest --watch run --no-file-parallelism` | Run the test suite sequentially with Vitest.               |
+| Script       | Command                                    | Description                                                |
+| ------------ | ------------------------------------------ | ---------------------------------------------------------- |
+| `dev`        | `nodemon --exec tsx src/server.ts`         | Start the API in development mode with automatic restarts. |
+| `build`      | `tsc`                                      | Compile TypeScript into `dist/`.                           |
+| `start`      | `node dist/server.js`                      | Run the compiled production build.                         |
+| `lint`       | `eslint src/**/*.ts`                       | Check source files with ESLint.                            |
+| `lint:fix`   | `eslint src/**/*.ts --fix`                 | Automatically fix lint issues where possible.              |
+| `format`     | `prettier --write "src/**/*.ts"`           | Format source files with Prettier.                         |
+| `test`       | `vitest --watch run --no-file-parallelism` | Run the test suite sequentially with Vitest.               |
+| `db:migrate` | `prisma migrate deploy`                    | Apply pending Prisma migrations to the database.           |
 
 ## Folder Structure
 
@@ -163,6 +200,8 @@ The folders below are organized by responsibility:
 │       ├── utils.ts
 │       └── validator.ts
 ├── api.rest
+├── compose.yml
+├── Dockerfile
 ├── eslint.config.mjs
 ├── openapi.yaml
 ├── package.json
